@@ -1,18 +1,25 @@
+#include <iostream>
+#include <sstream>
+#include <iomanip>
+#include <ctime>
+#include <thread>
+#include <chrono>
 #include "log.h"
-
+#include <functional>
+#include <map>
 namespace zhao
 {
-    // LogLevel 的实现
-    const char *LogLevel::ToString(LogLevel::Level level)
+
+    const char *LogLevel::toString(LogLevel::Level level)
     {
         switch (level)
         {
         case LogLevel::UNKNOW:
-            return "UNKNOW";
-        case LogLevel::DEBUG:
-            return "DEBUG";
+            return "UNKNOWN";
         case LogLevel::INFO:
             return "INFO";
+        case LogLevel::DEBUG:
+            return "DEBUG";
         case LogLevel::WARN:
             return "WARN";
         case LogLevel::ERROR:
@@ -20,16 +27,16 @@ namespace zhao
         case LogLevel::FATAL:
             return "FATAL";
         default:
-            return "UNKNOW";
+            return "UNKNOWN";
         }
     }
 
-    LogLevel::Level LogLevel::FromString(const std::string &str)
+    LogLevel::Level LogLevel::fromString(const std::string &str)
     {
-        if (str == "DEBUG")
-            return LogLevel::DEBUG;
         if (str == "INFO")
             return LogLevel::INFO;
+        if (str == "DEBUG")
+            return LogLevel::DEBUG;
         if (str == "WARN")
             return LogLevel::WARN;
         if (str == "ERROR")
@@ -39,184 +46,154 @@ namespace zhao
         return LogLevel::UNKNOW;
     }
 
-    // LogEvent 的实现
-    LogEvent::LogEvent(std::shared_ptr<Logger> logger, LogLevel::Level level,
-                       const char *file, int32_t line, uint32_t elapse,
-                       uint32_t thread_id, uint32_t fiber_id, uint64_t time,
-                       const std::string &thread_name,const std::string &content)
-        : m_logger(logger), m_level(level), m_file(file), m_line(line),
-          m_elapse(elapse), m_threadId(thread_id), m_fiberId(fiber_id),
-          m_time(time), m_threadName(thread_name),m_content(content) {}
-
-    // Logger 的实现
-    Logger::Logger(const std::string &name) : m_name(name) {}
-
-    void Logger::log(LogLevel::Level level, LogEvent::Ptr event)
-    {
-        if (level >= m_level)
-        {
-            for (auto &i : m_destions)
-            {
-                i->log(level, event);
-            }
-        }
-    }
-
-    void Logger::log_force(LogLevel::Level level, LogEvent::Ptr event, LogAppender::Ptr dest)
-    {
-        dest->log(level, event);
-    }
-
-    void Logger::info(LogEvent::Ptr event, LogAppender::Ptr dest)
-    {
-        log_force(LogLevel::INFO, event, dest);
-    }
-
-    void Logger::debug(LogEvent::Ptr event, LogAppender::Ptr dest)
-    {
-        log_force(LogLevel::DEBUG, event, dest);
-    }
-
-    void Logger::warn(LogEvent::Ptr event, LogAppender::Ptr dest)
-    {
-        log_force(LogLevel::WARN, event, dest);
-    }
-
-    void Logger::error(LogEvent::Ptr event, LogAppender::Ptr dest)
-    {
-        log_force(LogLevel::ERROR, event, dest);
-    }
-
-    void Logger::fatal(LogEvent::Ptr event, LogAppender::Ptr dest)
-    {
-        log_force(LogLevel::FATAL, event, dest);
-    }
-
-    void Logger::addDestion(LogAppender::Ptr dest)
-    {
-        m_destions.push_back(dest);
-    }
-
-    void Logger::removeDestion(LogAppender::Ptr dest)
-    {
-        m_destions.remove(dest);
-    }
-
-    // ConsoleAppender 的实现
-    void ConsoleAppender::log(LogLevel::Level level, LogEvent::Ptr event)
-    {
-        if (level > m_level)
-        {
-            std::cout << m_formatter->format(event);
-        }
-    }
-
-    // FileAppender 的实现
-    FileAppender::FileAppender(const std::string filename) : m_filename(filename)
-    {
-        m_filestream.open(m_filename, std::ios::out | std::ios::app);
-        if (!m_filestream.is_open())
-        {
-            std::cerr << "Failed to open file: " << m_filename << std::endl;
-        }
-    }
-
-    bool FileAppender::reopen(void)
-    {
-        if (m_filestream)
-        {
-            m_filestream.close();
-        }
-        m_filestream.open(m_filename,std::ios::out | std::ios::app);
-        return !m_filestream.fail();
-    }
-
-    void FileAppender::log(LogLevel::Level level, LogEvent::Ptr event)
-    {
-        if (level > m_level)
-        {
-            m_filestream << m_formatter->format(event);
-        }
-    }
-
-    // LogFormatter 的实现
-    LogFormatter::LogFormatter(const std::string &pattern) : m_pattern(pattern)
-    {
-        init();
-    }
-
-    std::string LogFormatter::format(LogEvent::Ptr event)
-    {
-        std::stringstream ss;
-        for (auto &i : vecs)
-        {
-            ss << i->toString(event);
-        }
-        return ss.str();
-    }
-
-    // FormatItem 子类的实现
-    class StringFormatItem : public LogFormatter::FormatItem
-    {
-    public:
-        StringFormatItem(const std::string &str) : m_str(str) {}
-        std::string toString(LogEvent::Ptr event) override
-        {
-            return m_str;
-        }
-
-    private:
-        std::string m_str;
-    };
-
     class MessageFormatItem : public LogFormatter::FormatItem
     {
     public:
+        MessageFormatItem(const std::string &str = "") {}
+        void format(std::ostream &os, LogEvent::Ptr event) override
+        {
+            os << event->m_message;
+        }
         std::string toString(LogEvent::Ptr event) override
         {
-            return event->m_content;
+            return event->m_message;
         }
     };
-
     class LevelFormatItem : public LogFormatter::FormatItem
     {
     public:
+        LevelFormatItem(const std::string &str = "") {}
+        void format(std::ostream &os, LogEvent::Ptr event) override
+        {
+            os << LogLevel::toString(event->m_level);
+        }
         std::string toString(LogEvent::Ptr event) override
         {
-            return LogLevel::ToString(event->m_level);
+            return LogLevel::toString(event->m_level);
         }
     };
-
     class ElapseFormatItem : public LogFormatter::FormatItem
     {
     public:
+        ElapseFormatItem(const std::string &str = "") {}
+        void format(std::ostream &os, LogEvent::Ptr event) override
+        {
+            os << event->m_elapse;
+        }
         std::string toString(LogEvent::Ptr event) override
         {
             return std::to_string(event->m_elapse);
         }
     };
-
     class NameFormatItem : public LogFormatter::FormatItem
     {
     public:
+        NameFormatItem(const std::string &str = "") {}
+        void format(std::ostream &os, LogEvent::Ptr event) override
+        {
+            os << event->m_logger->getName();
+        }
         std::string toString(LogEvent::Ptr event) override
         {
             return event->m_logger->getName();
         }
     };
-
     class ThreadIdFormatItem : public LogFormatter::FormatItem
     {
     public:
+        ThreadIdFormatItem(const std::string &str = "") {}
+        void format(std::ostream &os, LogEvent::Ptr event) override
+        {
+            os << event->m_threadId;
+        }
         std::string toString(LogEvent::Ptr event) override
         {
             return std::to_string(event->m_threadId);
+        }
+    };
+    // New FormatItem subclasses
+    class TimeFormatItem : public LogFormatter::FormatItem
+    {
+    public:
+        TimeFormatItem(const std::string &str = "") {}
+        void format(std::ostream &os, LogEvent::Ptr event) override
+        {
+            std::time_t t = static_cast<std::time_t>(event->m_time / 1000000);
+            std::tm tm = *std::localtime(&t);
+            os << std::put_time(&tm, "%Y-%m-%d %H:%M:%S");
+        }
+        std::string toString(LogEvent::Ptr event) override
+        {
+            std::ostringstream oss;
+            format(oss, event);
+            return oss.str();
+        }
+    };
+
+    class FileNameFormatItem : public LogFormatter::FormatItem
+    {
+    public:
+        FileNameFormatItem(const std::string &str = "") {}
+        void format(std::ostream &os, LogEvent::Ptr event) override
+        {
+            os << event->m_file;
+        }
+        std::string toString(LogEvent::Ptr event) override
+        {
+            return event->m_file ? event->m_file : "";
+        }
+    };
+
+    class LineNumberFormatItem : public LogFormatter::FormatItem
+    {
+    public:
+        LineNumberFormatItem(const std::string &str = "") {}
+        void format(std::ostream &os, LogEvent::Ptr event) override
+        {
+            os << event->m_line;
+        }
+        std::string toString(LogEvent::Ptr event) override
+        {
+            return std::to_string(event->m_line);
+        }
+    };
+
+    class NewLineFormatItem : public LogFormatter::FormatItem
+    {
+    public:
+        NewLineFormatItem(const std::string &str = "") {}
+        void format(std::ostream &os, LogEvent::Ptr event) override
+        {
+            os << std::endl;
+        }
+        std::string toString(LogEvent::Ptr event) override
+        {
+            return "\n";
+        }
+    };
+
+    class TabFormatItem : public LogFormatter::FormatItem
+    {
+    public:
+        TabFormatItem(const std::string &str = "") {}
+        void format(std::ostream &os, LogEvent::Ptr event) override
+        {
+            os << "\t";
+        }
+        std::string toString(LogEvent::Ptr event) override
+        {
+            return "\t";
         }
     };
 
     class FiberIdFormatItem : public LogFormatter::FormatItem
     {
     public:
+        FiberIdFormatItem(const std::string &str = "") {}
+        void format(std::ostream &os, LogEvent::Ptr event) override
+        {
+            os << event->m_fiberId;
+        }
         std::string toString(LogEvent::Ptr event) override
         {
             return std::to_string(event->m_fiberId);
@@ -226,158 +203,272 @@ namespace zhao
     class ThreadNameFormatItem : public LogFormatter::FormatItem
     {
     public:
+        ThreadNameFormatItem(const std::string &str = "") {}
+        void format(std::ostream &os, LogEvent::Ptr event) override
+        {
+            os << event->m_threadName;
+        }
         std::string toString(LogEvent::Ptr event) override
         {
             return event->m_threadName;
         }
     };
 
-    class DateTimeFormatItem : public LogFormatter::FormatItem
+    class UnknownFormatItem : public LogFormatter::FormatItem
     {
-    public:
-        DateTimeFormatItem(const std::string &format = "%Y-%m-%d %H:%M:%S")
-            : m_format(format)
-        {
-            if (m_format.empty())
-            {
-                m_format = "%Y-%m-%d %H:%M:%S";
-            }
-        }
-
-        std::string toString(LogEvent::Ptr event) override
-        {
-            time_t t = event->m_time / 1000;
-            struct tm *tm = localtime(&t);
-            char buf[64];
-            strftime(buf, sizeof(buf), m_format.c_str(), tm);
-            return buf;
-        }
-
     private:
         std::string m_format;
-    };
 
-    class FilenameFormatItem : public LogFormatter::FormatItem
-    {
     public:
-        std::string toString(LogEvent::Ptr event) override
+        UnknownFormatItem(const std::string &str = "") : m_format(str) {}
+        void format(std::ostream &os, LogEvent::Ptr event) override
         {
-            return event->m_file ? event->m_file : "";
+            os << m_format;
         }
-    };
-
-    class LineFormatItem : public LogFormatter::FormatItem
-    {
-    public:
         std::string toString(LogEvent::Ptr event) override
         {
-            return std::to_string(event->m_line);
-        }
-    };
-
-    class TabFormatItem : public LogFormatter::FormatItem
-    {
-    public:
-        std::string toString(LogEvent::Ptr event) override
-        {
-            return "\t";
-        }
-    };
-
-    class NewLineFormatItem : public LogFormatter::FormatItem
-    {
-    public:
-        std::string toString(LogEvent::Ptr event) override
-        {
-            return "\n";
+            return m_format;
         }
     };
     void LogFormatter::init()
     {
-        std::string str;
-        for (size_t i = 0; i < m_pattern.size(); ++i)
+        // %x type
+        std::vector<std::pair<std::string, LogFormatter::FormatItemType>> vec;
+        size_t pos = 0;
+        size_t start = 0;
+        std::string token;
+        std::string pattern = m_pattern;
+
+        while ((pos = pattern.find('%', start)) != std::string::npos)
         {
-            if (m_pattern[i] != '%')
+            if (pos > start)
             {
-                str += m_pattern[i];
-                continue;
+                // 处理 % 之前的普通文本
+                token = pattern.substr(start, pos - start);
+                vec.push_back(std::make_pair(token, UNKNOWN));
             }
 
-            if (i + 1 >= m_pattern.size())
+            // 处理 % 开头的格式项
+            if (pos + 1 >= pattern.length())
             {
+                // 如果 % 是最后一个字符，直接结束
                 m_error = true;
                 return;
             }
 
-            if (!str.empty())
-            {
-                vecs.push_back(std::make_shared<StringFormatItem>(str));
-                str.clear();
-            }
+            char formatChar = pattern[pos + 1];
+            std::string formatToken = "%" + std::string(1, formatChar);
+            LogFormatter::FormatItemType type = UNKNOWN;
 
-            char fmt = m_pattern[++i];
-            switch (fmt)
+            // 根据格式字符确定类型
+            switch (formatChar)
             {
-            case 'm': // 消息
-                vecs.push_back(std::make_shared<MessageFormatItem>());
+            case 'm':
+                type = MESSAGE;
                 break;
-            case 'p': // 日志级别
-                vecs.push_back(std::make_shared<LevelFormatItem>());
+            case 'p':
+                type = LEVEL;
                 break;
-            case 'r': // 累计毫秒数
-                vecs.push_back(std::make_shared<ElapseFormatItem>());
+            case 'r':
+                type = ELAPSE;
                 break;
-            case 'c': // 日志名称
-                vecs.push_back(std::make_shared<NameFormatItem>());
+            case 'c':
+                type = NAME;
                 break;
-            case 't': // 线程ID
-                vecs.push_back(std::make_shared<ThreadIdFormatItem>());
+            case 't':
+                type = THREAD_ID;
                 break;
-            case 'n': // 换行
-                vecs.push_back(std::make_shared<NewLineFormatItem>());
+            case 'n':
+                type = NEWLINE;
                 break;
-            case 'd': // 时间
-            {
-                std::string time_fmt;
-                if (i + 1 < m_pattern.size() && m_pattern[i + 1] == '{')
-                {
-                    ++i;
-                    size_t j = m_pattern.find('}', i);
-                    if (j == std::string::npos)
-                    {
-                        m_error = true;
-                        return;
-                    }
-                    time_fmt = m_pattern.substr(i + 1, j - i - 1);
-                    i = j;
-                }
-                vecs.push_back(std::make_shared<DateTimeFormatItem>(time_fmt));
-            }
-            break;
-            case 'f': // 文件名
-                vecs.push_back(std::make_shared<FilenameFormatItem>());
+            case 'd':
+                type = TIME;
                 break;
-            case 'l': // 行号
-                vecs.push_back(std::make_shared<LineFormatItem>());
+            case 'f':
+                type = FILE;
                 break;
-            case 'T': // 制表符
-                vecs.push_back(std::make_shared<TabFormatItem>());
+            case 'l':
+                type = LINE;
                 break;
-            case 'F': // 协程ID
-                vecs.push_back(std::make_shared<FiberIdFormatItem>());
+            case 'T':
+                type = TAB;
                 break;
-            case 'N': // 线程名称
-                vecs.push_back(std::make_shared<ThreadNameFormatItem>());
+            case 'F':
+                type = FIBER_ID;
+                break;
+            case 'N':
+                type = THREAD_NAME;
                 break;
             default:
+                // 未知格式字符
                 m_error = true;
                 return;
             }
+
+            vec.push_back(std::make_pair(formatToken, type));
+            start = pos + 2; // 跳过 % 和格式字符
         }
 
-        if (!str.empty())
+        // 处理剩余的普通文本
+        if (start < pattern.length())
         {
-            vecs.push_back(std::make_shared<StringFormatItem>(str));
+            token = pattern.substr(start);
+            vec.push_back(std::make_pair(token, UNKNOWN));
+        }
+
+        // 将解析结果转换为 FormatItem
+        static std::map<LogFormatter::FormatItemType, std::function<FormatItem::Ptr(const std::string &str)>> s_type2format = {
+#define XX(type, C)                                                                            \
+    {                                                                                          \
+        type, [](const std::string &str) { return FormatItem::Ptr(std::make_shared<C>(str)); } \
+    }
+            XX(MESSAGE, MessageFormatItem),
+            XX(LEVEL, LevelFormatItem),
+            XX(ELAPSE, ElapseFormatItem),
+            XX(NAME, NameFormatItem),
+            XX(THREAD_ID, ThreadIdFormatItem),
+            XX(TIME, TimeFormatItem),
+            XX(FILE, FileNameFormatItem),
+            XX(LINE, LineNumberFormatItem),
+            XX(NEWLINE, NewLineFormatItem),
+            XX(TAB, TabFormatItem),
+            XX(FIBER_ID, FiberIdFormatItem),
+            XX(THREAD_NAME, ThreadNameFormatItem),
+            XX(UNKNOWN, UnknownFormatItem)
+#undef XX
+        };
+
+        // 将解析结果转换为 FormatItem
+        for (auto &i : vec)
+        {
+            if (i.second != UNKNOWN)
+            {
+                m_items.push_back(s_type2format[i.second](i.first));
+            }
+            else
+            {
+                m_items.push_back(s_type2format[i.second](i.first));
+            }
         }
     }
-}
+
+    // LogFormatter::format() implementation
+    std::string LogFormatter::format(LogEvent::Ptr event)
+    {
+        std::stringstream ss;
+        for (auto &i : m_items)
+        {
+            i->format(ss, event);
+        }
+        return ss.str();
+    }
+
+    // FileAppender::log() implementation
+    void FileAppender::log(LogLevel::Level level, LogEvent::Ptr event)
+    {
+        if (level >= m_level)
+        {
+            m_filestream << m_formatter->format(event);
+        }
+    }
+
+    // ConsoleAppender::log() implementation
+    void ConsoleAppender::log(LogLevel::Level level, LogEvent::Ptr event)
+    {
+        if (level >= m_level)
+        {
+            std::cout << m_formatter->format(event) << std::endl;
+        }
+    }
+
+    Logger::Logger(const std::string &name) : m_name(name), m_level(LogLevel::DEBUG)
+    {
+        // 创建默认格式器
+        if (!m_formatter)
+        {
+            m_formatter = std::make_shared<LogFormatter>(LOG_DEFAULT_PATTERN);
+        }
+        // 创建默认输出流
+        addAppender(std::make_shared<ConsoleAppender>());
+    }
+
+    // Logger::log() implementation
+    void Logger::log(LogLevel::Level level, LogEvent::Ptr event)
+    {
+        if (m_appenders.empty())
+        {
+            std::cout << "appenders is empty" << std::endl;
+        }
+        if (level >= m_level)
+        {
+            for (auto &appender : m_appenders)
+            {
+                appender->log(level, event);
+            }
+        }
+    }
+
+    // Logger::log_force() implementation
+    void Logger::log_force(LogLevel::Level level, LogEvent::Ptr event, LogAppender::Ptr dest)
+    {
+        dest->log(level, event);
+    }
+
+    // Logger::info() implementation
+    void Logger::info(LogEvent::Ptr event, LogAppender::Ptr dest)
+    {
+        log_force(LogLevel::INFO, event, dest);
+    }
+
+    // Logger::debug() implementation
+    void Logger::debug(LogEvent::Ptr event, LogAppender::Ptr dest)
+    {
+        log_force(LogLevel::DEBUG, event, dest);
+    }
+
+    // Logger::warn() implementation
+    void Logger::warn(LogEvent::Ptr event, LogAppender::Ptr dest)
+    {
+        log_force(LogLevel::WARN, event, dest);
+    }
+
+    // Logger::error() implementation
+    void Logger::error(LogEvent::Ptr event, LogAppender::Ptr dest)
+    {
+        log_force(LogLevel::ERROR, event, dest);
+    }
+
+    // Logger::fatal() implementation
+    void Logger::fatal(LogEvent::Ptr event, LogAppender::Ptr dest)
+    {
+        log_force(LogLevel::FATAL, event, dest);
+    }
+
+    // Logger::addAppender() implementation
+    void Logger::addAppender(LogAppender::Ptr appender)
+    {
+        if (!appender->getFormatter())
+        {
+            appender->setFormatter(m_formatter);
+        }
+        m_appenders.push_back(appender);
+    }
+
+    // Logger::delAppender() implementation
+    void Logger::delAppender(LogAppender::Ptr appender)
+    {
+        m_appenders.remove(appender);
+    }
+
+    // FileAppender::reopen() implementation
+    bool FileAppender::reopen(void)
+    {
+        if (m_filestream)
+        {
+            m_filestream.close();
+        }
+        m_filestream.open(m_filename.c_str(), std::ios::app);
+        return m_filestream.is_open();
+    }
+
+} // namespace zhao
