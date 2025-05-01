@@ -7,8 +7,11 @@
 #include "log.h"
 #include <functional>
 #include <map>
+
+
 namespace zhao
 {
+    
 
     const char *LogLevel::toString(LogLevel::Level level)
     {
@@ -118,7 +121,7 @@ namespace zhao
         TimeFormatItem(const std::string &str = "") {}
         void format(std::ostream &os, LogEvent::Ptr event) override
         {
-            std::time_t t = static_cast<std::time_t>(event->m_time / 1000000);
+            std::time_t t = static_cast<std::time_t>(event->m_time );
             std::tm tm = *std::localtime(&t);
             os << std::put_time(&tm, "%Y-%m-%d %H:%M:%S");
         }
@@ -352,6 +355,16 @@ namespace zhao
         }
     }
 
+    void LoggerManager::init()
+    {
+        return;
+    }
+    Logger::Ptr LoggerManager::getLogger(const std::string &name)
+    {
+        Logger::Ptr ret_logger = m_loggers.find(name) == m_loggers.end() ? m_root : m_loggers[name];
+        return ret_logger;
+    }
+
     // LogFormatter::format() implementation
     std::string LogFormatter::format(LogEvent::Ptr event)
     {
@@ -381,8 +394,9 @@ namespace zhao
         }
     }
 
-    Logger::Logger(const std::string &name) : m_name(name), m_level(LogLevel::DEBUG)
+    Logger::Logger(const std::string &name) : m_name(name)
     {
+        m_level = static_cast<LogLevel::Level>(LOG_DEFAULT_LEVEL);
         // 创建默认格式器
         if (!m_formatter)
         {
@@ -469,6 +483,12 @@ namespace zhao
         }
         m_filestream.open(m_filename.c_str(), std::ios::app);
         return m_filestream.is_open();
+    }
+
+    LoggerManager::LoggerManager()
+    {
+        m_root = std::make_shared<Logger>("root");
+
     }
 
 } // namespace zhao

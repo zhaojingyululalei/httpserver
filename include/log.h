@@ -3,13 +3,46 @@
 #include <string>
 #include <iostream>
 #include <fstream>
-
 #include <memory>
-#include <stdint.h>
 #include <list>
 #include <sstream>
 #include <vector>
+#include <map>
+
+#include <stdint.h>
+#include <stdarg.h>
+#include "utils.h"
+#include "singleton.h"
+
+#define ZHAO_LOG(logger, level)      \
+    if (logger->getLevel() <= level) \
+    zhao::LogEventWrap(zhao::LogEvent::Ptr(new zhao::LogEvent(logger, level, __FILE__, __LINE__, zhao::getElapse(), zhao::getThreadId(), zhao::getFiberId(), zhao::getTimeStamp(), zhao::getThreadName(), "")))
+
+#define ZHAO_LOG_INFO(logger) ZHAO_LOG(logger, zhao::LogLevel::INFO)
+#define ZHAO_LOG_DEBUG(logger) ZHAO_LOG(logger, zhao::LogLevel::DEBUG)
+#define ZHAO_LOG_WARN(logger) ZHAO_LOG(logger, zhao::LogLevel::WARN)
+#define ZHAO_LOG_ERROR(logger) ZHAO_LOG(logger, zhao::LogLevel::ERROR)
+#define ZHAO_LOG_FATAL(logger) ZHAO_LOG(logger, zhao::LogLevel::FATAL)
+
+#define ZHAO_LOG_FMT(logger, level, fmt, ...) \
+    if (logger->getLevel() <= level)          \
+    zhao::LogEventWrap(zhao::LogEvent::Ptr(new zhao::LogEvent(logger, level, __FILE__, __LINE__, zhao::getElapse(), zhao::getThreadId(), zhao::getFiberId(), zhao::getTimeStamp(), zhao::getThreadName(), zhao::MessageFormat(fmt, __VA_ARGS__))))
+
+#define ZHAO_LOG_FMT_INFO(logger, fmt, ...) \
+    ZHAO_LOG_FMT(logger, zhao::LogLevel::INFO, fmt, __VA_ARGS__)
+#define ZHAO_LOG_FMT_DEBUG(logger, fmt, ...) \
+    ZHAO_LOG_FMT(logger, zhao::LogLevel::DEBUG, fmt, __VA_ARGS__)
+#define ZHAO_LOG_FMT_WARN(logger, fmt, ...) \
+    ZHAO_LOG_FMT(logger, zhao::LogLevel::WARN, fmt, __VA_ARGS__)
+#define ZHAO_LOG_FMT_ERROR(logger, fmt, ...) \
+    ZHAO_LOG_FMT(logger, zhao::LogLevel::ERROR, fmt, __VA_ARGS__)
+#define ZHAO_LOG_FMT_FATAL(logger, fmt, ...) \
+    ZHAO_LOG_FMT(logger, zhao::LogLevel::FATAL, fmt, __VA_ARGS__)
+
+#define LOG_DEFAULT_LEVEL 0
+
 #define LOG_DEFAULT_PATTERN "time:%d  |  tid:%t  |  threadname:%N  |  fiberid:%F  |  dbg:[%p]  |  logger:[%c]  |  file:%f  |  line:%l  |  content:%m%n"
+
 namespace zhao
 {
     class LogLevel;
@@ -17,6 +50,7 @@ namespace zhao
     class LogEvent;
     class Logger;
 
+    std::string MessageFormat(const char *fmt, ...);
     /**
      * @brief 日志级别
      */
@@ -66,7 +100,7 @@ namespace zhao
     public:
         typedef std::shared_ptr<LogEvent> Ptr;
         LogEvent(std::shared_ptr<Logger> logger, LogLevel::Level level, const char *file, int32_t line, uint32_t elapse, uint32_t thread_id, uint32_t fiber_id, uint64_t time, const std::string &thread_name, const std::string &message)
-        : m_logger(logger), m_level(level), m_file(file), m_line(line), m_elapse(elapse), m_threadId(thread_id), m_fiberId(fiber_id), m_time(time), m_threadName(thread_name), m_message(message) {}
+            : m_logger(logger), m_level(level), m_file(file), m_line(line), m_elapse(elapse), m_threadId(thread_id), m_fiberId(fiber_id), m_time(time), m_threadName(thread_name), m_message(message) {}
     };
 
     /**
@@ -124,7 +158,7 @@ namespace zhao
             UNKNOWN
         };
         typedef std::shared_ptr<LogFormatter> Ptr;
-        LogFormatter(const std::string &pattern) : m_pattern(pattern) { init();}
+        LogFormatter(const std::string &pattern) : m_pattern(pattern) { init(); }
         class FormatItem
         {
         public:
@@ -192,10 +226,10 @@ namespace zhao
         std::string m_name;                      // 日志名称
         LogLevel::Level m_level;                 // 日志等级
         std::list<LogAppender::Ptr> m_appenders; // 输出目的地集合
-        LogFormatter::Ptr m_formatter;            // 日志格默认格式器
+        LogFormatter::Ptr m_formatter;           // 日志格默认格式器
     public:
         typedef std::shared_ptr<Logger> Ptr;
-        Logger(const std::string &name = "default") ;
+        Logger(const std::string &name = "default");
 
         void log(LogLevel::Level level, LogEvent::Ptr event);
 
@@ -217,7 +251,53 @@ namespace zhao
         void setLevel(LogLevel::Level level) { m_level = level; }
     };
 
+    class LogEventWrap
+    {
+    private:
+        LogEvent::Ptr m_event; // 日志事件
+    public:
+        /**
+         * @brief 构造函数
+         * @param event 日志事件
+         */
+        LogEventWrap(LogEvent::Ptr event) : m_event(event) {}
 
+        /**
+         * @brief 析构函数
+         * @details 在析构时输出日志
+         */
+        ~LogEventWrap()
+        {
+            if (m_event->m_logger)
+            {
+                m_event->m_logger->log(m_event->m_level, m_event);
+            }
+        }
+
+        template <typename T>
+        LogEventWrap &operator<<(T &&value)
+        {
+            std::stringstream ss;
+            ss << value;
+            m_event->m_message += ss.str();
+            return *this;
+        }
+    };
+
+    class LoggerManager
+    {
+    private:
+        std::map<std::string, Logger::Ptr> m_loggers;
+        Logger::Ptr m_root;
+
+    public:
+        LoggerManager();
+        // 根据配置系统获取日志
+        void init();
+        Logger::Ptr getLogger(const std::string &name = "");
+    };
+    //单例
+    typedef zhao::SingletonPtr<zhao::LoggerManager> LoggerMgr;
 } // namespace zhao
 
 #endif
