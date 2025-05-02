@@ -39,6 +39,8 @@
 #define ZHAO_LOG_FMT_FATAL(logger, fmt, ...) \
     ZHAO_LOG_FMT(logger, zhao::LogLevel::FATAL, fmt, __VA_ARGS__)
 
+#define GET_ROOT_LOGGER() zhao::LoggerMgr::getInstance()->getRoot()
+#define GET_LOGGER(name) zhao::LoggerMgr::getInstance()->getLogger(name)
 #define LOG_DEFAULT_LEVEL 0
 
 #define LOG_DEFAULT_PATTERN "time:%d  |  tid:%t  |  threadname:%N  |  fiberid:%F  |  dbg:[%p]  |  logger:[%c]  |  file:%f  |  line:%l  |  content:%m%n"
@@ -295,6 +297,7 @@ namespace zhao
         // 根据配置系统获取日志
         void init();
         Logger::Ptr getLogger(const std::string &name = "");
+        Logger::Ptr getRoot() { return m_root; }
     };
     //单例
     typedef zhao::SingletonPtr<zhao::LoggerManager> LoggerMgr;

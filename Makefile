@@ -5,7 +5,7 @@ CXX = g++
 CXXFLAGS	:= -std=c++17 -Wall -Wextra -g
 
 # define library paths in addition to /usr/lib
-LFLAGS = -lpthread
+LFLAGS = -lpthread -lyaml-cpp
 
 # define output directory
 OUTPUT	:= output

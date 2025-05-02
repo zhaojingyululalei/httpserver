@@ -1,0 +1,16 @@
+logs:
+  - name: "logger1"
+    level: "debug"
+    formatter: "%d%T%m%n"
+    appenders:
+      - type: "file"
+        dest: "log/test1.log"
+      - type: "console"
+
+  - name: "logger2"
+    level: "warn"
+    formatter: "%d%T%m%n"
+    appenders:
+      - type: "file"
+        dest: "log/test2.log"
+      - type: "console"
