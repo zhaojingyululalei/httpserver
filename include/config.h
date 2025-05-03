@@ -5,6 +5,7 @@
 #include <boost/lexical_cast.hpp>
 #include "log.h"
 #include <map>
+#include  <yaml-cpp/yaml.h>
 namespace zhao
 {
     /**
@@ -36,7 +37,18 @@ namespace zhao
         virtual bool fromString(const std::string &val) = 0;
     };
 
-    template <class T>
+    template <class FROM, class TO>
+    class BaseTypeConverter
+    {
+    public:
+        TO operator()(const FROM &from)
+        {
+            return boost::lexical_cast<TO>(from);
+        }
+    };
+
+    //仿函数  fromStr  toStr
+    template <class T,class fromStr=BaseTypeConverter<std::string,T>,class toStr=BaseTypeConverter<T,std::string>   >
     class ConfigItem : public ConfigItemBase
     {
     private:
@@ -53,7 +65,7 @@ namespace zhao
         {
             try
             {
-                return boost::lexical_cast<std::string>(m_value);
+                return toStr()(m_value); //临时对象仿函数
             }
             catch (const std::exception &e)
             {
@@ -65,7 +77,7 @@ namespace zhao
         {
             try
             {
-                m_value = boost::lexical_cast<T>(val);
+                m_value = fromStr()(val);//临时对象仿函数
                 return true;
             }
             catch(const std::exception& e)
@@ -103,10 +115,13 @@ namespace zhao
         {
             return std::dynamic_pointer_cast<ConfigItem<T>>(m_configs[name]);
         }
+
+        static void loadYamlToConfig(const YAML::Node &root);
     private:
         static ConfigMap m_configs;
     };
 
 } // namespace zhao
+
 
 #endif

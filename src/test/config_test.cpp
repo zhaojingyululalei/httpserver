@@ -81,7 +81,19 @@ static void test3(void)
     }
 
 }
+static void test4(void)
+{
+    zhao::ConfigItem<int>::Ptr cfgint = zhao::Config::lookup("testint", (int)100, "test");
+    zhao::ConfigItem<float>::Ptr cfgfloat = zhao::Config::lookup("testfloat", (float)3.1415f, "test");
+    ZHAO_LOG_INFO(GET_ROOT_LOGGER()) << "before:" << cfgint->toString() << " " << cfgfloat->toString(); 
+
+    YAML::Node root = YAML::LoadFile("config/config.yaml");
+    zhao::Config::loadYamlToConfig(root);
+
+    ZHAO_LOG_INFO(GET_ROOT_LOGGER()) << "after:" << cfgint->toString() << " " << cfgfloat->toString();
+
+}
 void config_test()
 {
-    test3();
+    test4();
 }

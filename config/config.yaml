@@ -14,3 +14,7 @@ logs:
       - type: "file"
         dest: "log/test2.log"
       - type: "console"
+
+system:
+  port: 8080
+  value: 12
