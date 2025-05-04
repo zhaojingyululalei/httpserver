@@ -3,9 +3,15 @@
 #include <string>
 #include <memory>
 #include <boost/lexical_cast.hpp>
-#include "log.h"
-#include <map>
 #include  <yaml-cpp/yaml.h>
+#include <vector>
+#include <map>
+#include <unordered_map>
+#include <set>
+#include <unordered_set>
+#include <list>
+
+#include "log.h"
 namespace zhao
 {
     /**
@@ -47,6 +53,235 @@ namespace zhao
         }
     };
 
+    template <class T>
+    class BaseTypeConverter<std::string,std::vector<T>>
+    {
+    public:
+        std::vector<T> operator()(const std::string &from)
+        { 
+            
+            YAML::Node node = YAML::Load(from); //node为数组类型
+            //如果node不是sequence类型，抛出异常
+            if (!node.IsSequence())
+                throw std::logic_error("node is not a sequence");
+            typename std::vector<T> vec;
+            for (size_t i = 0; i < node.size(); i++)
+            {
+                std::stringstream ss;
+                ss<< node[i];
+                vec.push_back( BaseTypeConverter<std::string,T>()(ss.str()));
+            }
+
+            return vec;
+        }
+    };
+
+    template <class T>
+    class BaseTypeConverter<std::vector<T>,std::string>
+    {
+    public:
+        std::string operator()(const std::vector<T> &from)
+        {
+            YAML::Node node;
+            for(auto i:from){
+                node.push_back(BaseTypeConverter<T,std::string>()(i));
+            }
+            std::stringstream ss;
+            ss<<node;
+            return ss.str();
+        }
+    };
+
+    template <class T>
+    class BaseTypeConverter<std::string,std::list<T>>
+    {
+    public:
+        std::list<T> operator()(const std::string &from)
+        { 
+            
+            YAML::Node node = YAML::Load(from); //node为数组类型
+            //如果node不是sequence类型，抛出异常
+            if (!node.IsSequence())
+                throw std::logic_error("node is not a sequence");
+            typename std::list<T> vec;
+            for (size_t i = 0; i < node.size(); i++)
+            {
+                std::stringstream ss;
+                ss<< node[i];
+                vec.push_back( BaseTypeConverter<std::string,T>()(ss.str()));
+            }
+
+            return vec;
+        }
+    };
+
+    template <class T>
+    class BaseTypeConverter<std::list<T>,std::string>
+    {
+    public:
+        std::string operator()(const std::list<T> &from)
+        {
+            YAML::Node node;
+            for(auto i:from){
+                node.push_back(BaseTypeConverter<T,std::string>()(i));
+            }
+            std::stringstream ss;
+            ss<<node;
+            return ss.str();
+        }
+    };
+
+    template <class T>
+    class BaseTypeConverter<std::string,std::set<T>>
+    {
+    public:
+        std::set<T> operator()(const std::string &from)
+        { 
+            
+            YAML::Node node = YAML::Load(from); //node为数组类型
+            //如果node不是sequence类型，抛出异常
+            if (!node.IsSequence())
+                throw std::logic_error("node is not a sequence");
+            typename std::set<T> set;
+            for (size_t i = 0; i < node.size(); i++)
+            {
+                std::stringstream ss;
+                ss<< node[i];
+                set.insert( BaseTypeConverter<std::string,T>()(ss.str()));
+            }
+
+            return set;
+        }
+    };
+
+    template <class T>
+    class BaseTypeConverter<std::set<T>,std::string>
+    {
+    public:
+        std::string operator()(const std::set<T> &from)
+        {
+            YAML::Node node;
+            for(auto i:from){
+                node.push_back(BaseTypeConverter<T,std::string>()(i));
+            }
+            std::stringstream ss;
+            ss<<node;
+            return ss.str();
+        }
+    };
+    template <class T>
+    class BaseTypeConverter<std::string,std::unordered_set<T>>
+    {
+    public:
+        std::unordered_set<T> operator()(const std::string &from)
+        { 
+            
+            YAML::Node node = YAML::Load(from); //node为数组类型
+            //如果node不是sequence类型，抛出异常
+            if (!node.IsSequence())
+                throw std::logic_error("node is not a sequence");
+            typename std::unordered_set<T> set;
+            for (size_t i = 0; i < node.size(); i++)
+            {
+                std::stringstream ss;
+                ss<< node[i];
+                set.insert( BaseTypeConverter<std::string,T>()(ss.str()));
+            }
+
+            return set;
+        }
+    };
+
+    template <class T>
+    class BaseTypeConverter<std::unordered_set<T>,std::string>
+    {
+    public:
+        std::string operator()(const std::unordered_set<T> &from)
+        {
+            YAML::Node node;
+            for(auto i:from){
+                node.push_back(BaseTypeConverter<T,std::string>()(i));
+            }
+            std::stringstream ss;
+            ss<<node;
+            return ss.str();
+        }
+    };
+    template <class T>
+    class BaseTypeConverter<std::string,std::map<std::string,T>>
+    {
+    public:
+        std::map<std::string,T> operator()(const std::string &from)
+        { 
+            
+            YAML::Node node = YAML::Load(from); //node为数组类型
+            //如果node不是sequence类型，抛出异常
+            if (!node.IsMap())
+                throw std::logic_error("node is not a map");
+            typename std::map<std::string,T> map;
+            for(auto it = node.begin(); it != node.end(); ++it){
+                std::stringstream ss;
+                ss<< it->second;
+                map.insert(std::make_pair(it->first.Scalar(),BaseTypeConverter<std::string,T>()(ss.str())));
+            }
+
+            return map;
+        }
+    };
+
+    template <class T>
+    class BaseTypeConverter<std::map<std::string,T>,std::string>
+    {
+    public:
+        std::string operator()(const std::map<std::string,T> &from)
+        {
+            YAML::Node node;
+            for(auto i:from){
+                node[i.first] = YAML::Load(BaseTypeConverter<T,std::string>()(i.second));
+            }
+            std::stringstream ss;
+            ss<<node;
+            return ss.str();
+        }
+    };
+
+    template <class T>
+    class BaseTypeConverter<std::string,std::unordered_map<std::string,T>>
+    {
+    public:
+        std::unordered_map<std::string,T> operator()(const std::string &from)
+        { 
+            
+            YAML::Node node = YAML::Load(from); //node为数组类型
+            //如果node不是sequence类型，抛出异常
+            if (!node.IsMap())
+                throw std::logic_error("node is not a map");
+            typename std::unordered_map<std::string,T> map;
+            for(auto it = node.begin(); it != node.end(); ++it){
+                std::stringstream ss;
+                ss<< it->second;
+                map.insert(std::make_pair(it->first.Scalar(),BaseTypeConverter<std::string,T>()(ss.str())));
+            }
+
+            return map;
+        }
+    };
+
+    template <class T>
+    class BaseTypeConverter<std::unordered_map<std::string,T>,std::string>
+    {
+    public:
+        std::string operator()(const std::unordered_map<std::string,T> &from)
+        {
+            YAML::Node node;
+            for(auto i:from){
+                node[i.first] = YAML::Load(BaseTypeConverter<T,std::string>()(i.second));
+            }
+            std::stringstream ss;
+            ss<<node;
+            return ss.str();
+        }
+    };
     //仿函数  fromStr  toStr
     template <class T,class fromStr=BaseTypeConverter<std::string,T>,class toStr=BaseTypeConverter<T,std::string>   >
     class ConfigItem : public ConfigItemBase

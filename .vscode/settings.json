@@ -60,6 +60,7 @@
         "complex": "cpp",
         "set": "cpp",
         "cfenv": "cpp",
-        "cinttypes": "cpp"
+        "cinttypes": "cpp",
+        "unordered_set": "cpp"
     }
 }

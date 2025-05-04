@@ -17,4 +17,19 @@ logs:
 
 system:
   port: 8080
-  value: 12
+  value: 12.5
+  vecs:
+    - 1
+    - 2
+    - 3
+  list: [4,5,6]
+  set: [7,8,9]
+  uset: [10,11,12]
+  map:
+    a: 1
+    b: 2
+    c: 3
+  umap:
+    d: 1
+    e: 2
+    f: 3
