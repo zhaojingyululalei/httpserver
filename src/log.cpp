@@ -357,11 +357,20 @@ namespace zhao
 
     void LoggerManager::init()
     {
+        
         return;
     }
     Logger::Ptr LoggerManager::getLogger(const std::string &name)
     {
-        Logger::Ptr ret_logger = m_loggers.find(name) == m_loggers.end() ? m_root : m_loggers[name];
+        Logger::Ptr ret_logger ;
+        if(m_loggers.find(name) == m_loggers.end())
+        {
+            std::cout<<"Logger "<<name<<" not found, using root logger instead."<<std::endl;
+            ret_logger = m_root;
+        }else{
+
+            ret_logger = m_loggers[name];
+        }
         return ret_logger;
     }
 
@@ -488,7 +497,7 @@ namespace zhao
     LoggerManager::LoggerManager()
     {
         m_root = std::make_shared<Logger>("root");
-
+        init();
     }
 
 } // namespace zhao

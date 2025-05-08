@@ -9,6 +9,8 @@
 #include <unordered_map>
 #include <set>
 #include <unordered_set>
+#include <functional>
+#include <stdint.h>
 #include <list>
 
 #include "log.h"
@@ -286,8 +288,7 @@ namespace zhao
     template <class T,class fromStr=BaseTypeConverter<std::string,T>,class toStr=BaseTypeConverter<T,std::string>   >
     class ConfigItem : public ConfigItemBase
     {
-    private:
-        T m_value;
+    
 
     public:
         ConfigItem(const std::string &name, const std::string &desc, const T &value)
@@ -296,6 +297,21 @@ namespace zhao
             }
 
         typedef std::shared_ptr<ConfigItem> Ptr;
+        typedef std::function<void(const T&old_value,const T&new_value)> onChangeCallback;
+        T getvalue()
+        {
+            return m_value;
+        }
+        void setvalue(const T &value){
+            if(value == m_value)
+                return;
+            else{
+                for(auto &i:m_onChangeCallbacks){
+                    i.second(m_value,value);//值改变后调用注册的回调函数
+                }
+                m_value = value;
+            }
+        }
         std::string toString() override
         {
             try
@@ -312,7 +328,7 @@ namespace zhao
         {
             try
             {
-                m_value = fromStr()(val);//临时对象仿函数
+                setvalue(fromStr()(val));//临时对象仿函数
                 return true;
             }
             catch(const std::exception& e)
@@ -321,6 +337,28 @@ namespace zhao
             }
             return false;
         }
+        void addOnChangeCallback(uint64_t id, onChangeCallback callback)
+        {
+            m_onChangeCallbacks[id] = callback;
+        }
+        void delOnChangeCallback(uint64_t id)
+        {
+            m_onChangeCallbacks.erase(id);
+        }
+        onChangeCallback getOnChangeCallbacks(uint64_t id)
+        {
+            if(m_onChangeCallbacks.find(id) != m_onChangeCallbacks.end())
+                return m_onChangeCallbacks[id];
+            return nullptr;
+        }
+        void clearOnChangeCallbacks()
+        {
+            m_onChangeCallbacks.clear();
+        }
+        
+    private:
+        T m_value;
+        std::map<uint64_t,onChangeCallback> m_onChangeCallbacks;
     };
 
     class Config
@@ -329,6 +367,9 @@ namespace zhao
     public:
         typedef std::shared_ptr<Config> Ptr;
         typedef std::map<std::string, ConfigItemBase::Ptr> ConfigMap;
+        /**
+         * @breif 有就返回，没有创建
+         */
         template<typename T>
         static typename ConfigItem<T>::Ptr lookup(const std::string &name,
                                                    const T &value,
@@ -345,6 +386,9 @@ namespace zhao
             return std::dynamic_pointer_cast<ConfigItem<T>>(m_configs[name]);
             
         }
+        /**
+         * @brief 查找配置项，没有返回空指针
+         */
         template<typename T>
         static typename ConfigItem<T>::Ptr find(const std::string &name)
         {

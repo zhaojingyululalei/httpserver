@@ -140,6 +140,63 @@ static void test3(void)
 // #undef XX
 // }
 
+class Student{
+public:
+    int age;
+    std::string name;
+    bool sex;
+    Student()
+    {}
+    Student(int age, std::string name, bool sex)
+        : age(age), name(name), sex(sex)
+    {}
+
+    std::string toString() const
+    {
+        std::stringstream ss;
+        ss << "age:" << age << " name:" << name << " sex:" << sex;
+        return ss.str();
+    }
+};
+namespace zhao
+{
+    template <>
+    class BaseTypeConverter<std::string,Student>
+    {
+    public:
+        Student operator()(const std::string &from)
+        { 
+            Student stu;
+            YAML::Node node = YAML::Load(from); //node为数组类型
+            //如果node不是sequence类型，抛出异常
+            if (!node.IsMap())
+                throw std::logic_error("node is not a map");
+            stu.age = node["age"].as<int>();
+            stu.name = node["name"].as<std::string>();
+            stu.sex = node["sex"].as<bool>();
+            return  stu;
+        }
+    };
+
+    template <>
+    class BaseTypeConverter<Student,std::string>
+    {
+    public:
+        std::string operator()(const Student &from)
+        {
+            YAML::Node node;
+            node["age"] = from.age;
+            node["name"]=from.name;
+            node["sex"] = from.sex;
+            std::stringstream ss;
+            ss<<node;
+            return ss.str();
+        }
+    };
+} // namespace zhao
+
+
+
 #define LOG_CONFIG_VALUE(name) \
     ZHAO_LOG_INFO(GET_ROOT_LOGGER()) << #name << ":" << cfg##name->toString() << "\n";
 static void test4(void)
@@ -157,6 +214,8 @@ static void test4(void)
     //CONFIG_ITEM(std::map<std::string,int>, map, system, "map number",std::map<std::string,int>{{a,15}});
     zhao::ConfigItem<std::map<std::string,int>>::Ptr cfgmap = zhao::Config::lookup("system.map", std::map<std::string,int>{{"a",15}}, "map number");
     zhao::ConfigItem<std::unordered_map<std::string,int>>::Ptr cfgumap = zhao::Config::lookup("system.umap", std::unordered_map<std::string,int>{{"b",16}}, "umap number");
+    zhao::ConfigItem<Student>::Ptr cfgstu = zhao::Config::lookup("system.stu", Student(18,"zhao",true), "stu number");
+    zhao::ConfigItem<std::map<std::string,Student>>::Ptr cfgstu_map = zhao::Config::lookup("class.stu_map", std::map<std::string,Student>{{"zhao",Student(18,"zhao",true)}}, "stu_map number");
 #undef CONFIG_ITEM
 
     // 输出配置项初始值
@@ -169,6 +228,8 @@ static void test4(void)
     LOG_CONFIG_VALUE(uset);
     LOG_CONFIG_VALUE(map);
     LOG_CONFIG_VALUE(umap);
+    LOG_CONFIG_VALUE(stu);
+    LOG_CONFIG_VALUE(stu_map);
 
     // 加载 YAML 配置文件并更新配置项
     YAML::Node root = YAML::LoadFile("config/config.yaml");
@@ -186,7 +247,8 @@ static void test4(void)
     FIND_CONFIG(std::unordered_set<int>, uset, system);
     cfgmap = zhao::Config::find<std::map<std::string,int>>("system.map");
     cfgumap = zhao::Config::find<std::unordered_map<std::string,int>>("system.umap");
-
+    cfgstu = zhao::Config::find<Student>("system.stu");
+    cfgstu_map = zhao::Config::find<std::map<std::string,Student>>("class.stu_map");
 #undef FIND_CONFIG
 
     ZHAO_LOG_INFO(GET_ROOT_LOGGER()) << "after:\n";
@@ -198,6 +260,8 @@ static void test4(void)
     LOG_CONFIG_VALUE(uset);
     LOG_CONFIG_VALUE(map);
     LOG_CONFIG_VALUE(umap);
+    LOG_CONFIG_VALUE(stu);
+    LOG_CONFIG_VALUE(stu_map);
 }
 
 
