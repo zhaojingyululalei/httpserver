@@ -157,6 +157,10 @@ public:
         ss << "age:" << age << " name:" << name << " sex:" << sex;
         return ss.str();
     }
+    bool operator==(const Student &other) const
+    {
+        return age == other.age && name == other.name && sex == other.sex;
+    }
 };
 namespace zhao
 {
@@ -264,8 +268,23 @@ static void test4(void)
     LOG_CONFIG_VALUE(stu_map);
 }
 
+static void test5(void)
+{
+    static zhao::Logger::Ptr system_log = GET_LOGGER("system");
+    ZHAO_LOG_INFO(system_log) << "hello system" << "\n";
+    std::cout << zhao::LoggerMgr::getInstance()->toYamlString() << std::endl;
+    YAML::Node root = YAML::LoadFile("config/config.yaml");
+    zhao::Config::loadYamlToConfig(root);
+    std::cout << "=============" << std::endl;
+    std::cout << zhao::LoggerMgr::getInstance()->toYamlString() << std::endl;
+    std::cout << "=============" << std::endl;
+    std::cout << root << std::endl;
+    ZHAO_LOG_FATAL(system_log) << "hello system" << "\n ";
 
+    // system_log->setFormatter(std::make_shared<zhao::LogFormatter>(new zhao::LogFormatter("%d - %m%n")));
+    // ZHAO_LOG_INFO(system_log) << "hello system" <<"\n";
+}
 void config_test()
 {
-    test4();
+    test5();
 }

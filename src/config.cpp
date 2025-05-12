@@ -4,7 +4,7 @@
 #include <yaml-cpp/yaml.h>
 namespace zhao
 {
-    Config::ConfigMap Config::m_configs;
+    //Config::ConfigMap Config::m_configs;
 
     static void getAllYamlNode(const std::string prefix, const YAML::Node &node, std::list<std::pair<std::string, YAML::Node>> &nodesList)
     {
@@ -35,8 +35,8 @@ namespace zhao
             }
             // 查找有没有定义该配置项，如果没定义，这个yaml_node不处理
             // 如果找到了该配置项，修改值
-            auto cfgitem = m_configs.find(key);
-            if (cfgitem != m_configs.end())
+            auto cfgitem = getConfigs().find(key);
+            if (cfgitem != getConfigs().end())
             {
                 ConfigItemBase::Ptr configItem = cfgitem->second;
                 if (configItem)

@@ -66,7 +66,9 @@ namespace zhao
             DEBUG = 2,
             WARN = 3,
             ERROR = 4,
-            FATAL = 5
+            FATAL = 5,
+            MAX = 6,
+
         };
 
         /**
@@ -175,7 +177,7 @@ namespace zhao
         std::string format(LogEvent::Ptr event);
         // 日志解析过程中是否有错
         bool isError() const { return m_error; }
-
+        std::string getPattern() const { return m_pattern; }
     private:
         // 传入的模式字符串
         std::string m_pattern;
@@ -196,7 +198,9 @@ namespace zhao
         virtual ~LogAppender() {};
 
         virtual void log(LogLevel::Level level, LogEvent::Ptr event) = 0;
+        virtual std::string toYamlString(void) = 0;
         void setFormatter(LogFormatter::Ptr formatter) { m_formatter = formatter; }
+        void setLevel(LogLevel::Level level) { m_level = level; }
         LogFormatter::Ptr getFormatter(void) { return m_formatter; }
     };
 
@@ -206,6 +210,7 @@ namespace zhao
     public:
         typedef std::shared_ptr<ConsoleAppender> Ptr;
         void log(LogLevel::Level level, LogEvent::Ptr event) override;
+        std::string toYamlString(void) override;
     };
 
     class FileAppender : public LogAppender
@@ -217,9 +222,10 @@ namespace zhao
     public:
         typedef std::shared_ptr<FileAppender> Ptr;
         void log(LogLevel::Level level, LogEvent::Ptr event) override;
-        FileAppender(const std::string filename) : m_filename(filename) {}
         // 重新打开文件，成功返回true
         bool reopen(void);
+        FileAppender(const std::string filename) : m_filename(filename) {reopen();}
+        std::string toYamlString(void) override;
     };
 
     class Logger
@@ -245,12 +251,14 @@ namespace zhao
 
         void addAppender(LogAppender::Ptr appender);
         void delAppender(LogAppender::Ptr appender);
-
+        void clearAppenders();
         std::string getName() { return m_name; }
         void setName(std::string &name) { m_name = name; }
 
         LogLevel::Level getLevel() { return m_level; }
         void setLevel(LogLevel::Level level) { m_level = level; }
+        void setFormatter(LogFormatter::Ptr formatter) { m_formatter = formatter; }
+        std::string toYamlString( );
     };
 
     class LogEventWrap
@@ -298,6 +306,7 @@ namespace zhao
         void init();
         Logger::Ptr getLogger(const std::string &name = "");
         Logger::Ptr getRoot() { return m_root; }
+        std::string toYamlString(void);
     };
     //单例
     typedef zhao::SingletonPtr<zhao::LoggerManager> LoggerMgr;

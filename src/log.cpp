@@ -4,14 +4,13 @@
 #include <ctime>
 #include <thread>
 #include <chrono>
-#include "log.h"
 #include <functional>
 #include <map>
 
-
+#include "log.h"
+#include "config.h"
 namespace zhao
 {
-    
 
     const char *LogLevel::toString(LogLevel::Level level)
     {
@@ -121,7 +120,7 @@ namespace zhao
         TimeFormatItem(const std::string &str = "") {}
         void format(std::ostream &os, LogEvent::Ptr event) override
         {
-            std::time_t t = static_cast<std::time_t>(event->m_time );
+            std::time_t t = static_cast<std::time_t>(event->m_time);
             std::tm tm = *std::localtime(&t);
             os << std::put_time(&tm, "%Y-%m-%d %H:%M:%S");
         }
@@ -354,20 +353,233 @@ namespace zhao
             }
         }
     }
+    struct LogAppenderDefine
+    {
+        int type = 0;
+        LogLevel::Level level = LogLevel::DEBUG;
+        std::string formatter;
+        std::string file;
 
+        bool operator==(const LogAppenderDefine &oth) const
+        {
+            return type == oth.type && level == oth.level && formatter == oth.formatter && file == oth.file;
+        }
+    };
+    struct LogDefine
+    {
+        std::string name;
+        std::vector<LogAppenderDefine> appenders;
+        LogLevel::Level level = LogLevel::DEBUG;
+        std::string formatter;
+
+        bool operator==(const LogDefine &oth) const
+        {
+            return name == oth.name && appenders == oth.appenders && level == oth.level && formatter == oth.formatter;
+        }
+        bool operator<(const LogDefine &oth) const
+        {
+            return name < oth.name;
+        }
+    };
+    template <>
+    class BaseTypeConverter<std::string, std::set<LogDefine>>
+    {
+    public:
+        std::set<LogDefine> operator()(const std::string &val) const
+        {
+            YAML::Node node = YAML::Load(val);
+            if (!node.IsSequence())
+            {
+                std::cout << "config error: log is not a sequence" << std::endl;
+                return {}; // 返回空的 set
+            }
+
+            std::set<LogDefine> log_defines;
+            for (size_t i = 0; i < node.size(); ++i)
+            {
+                auto n = node[i];
+                if (!n["name"].IsDefined())
+                {
+                    continue; // 跳过没有 name 的节点
+                }
+
+                LogDefine def;
+                def.name = n["name"].as<std::string>();
+                def.level = LogLevel::fromString(n["level"].IsDefined() ? n["level"].as<std::string>() : "MAX");
+                def.formatter = n["formatter"].IsDefined() ? n["formatter"].as<std::string>() : "%d{%Y-%m-%d %H:%M:%S}%T%t%T%N%T%F";
+
+                if (n["appenders"].IsDefined() && n["appenders"].IsSequence())
+                {
+                    for (size_t x = 0; x < n["appenders"].size(); ++x)
+                    {
+                        auto a = n["appenders"][x];
+                        if (!a["type"].IsDefined())
+                        {
+                            continue; // 跳过没有 type 的节点
+                        }
+
+                        std::string type = a["type"].as<std::string>();
+                        LogAppenderDefine apd;
+
+                        if (type == "FileLogAppender")
+                        {
+                            apd.type = 1;
+                            if (!a["file"].IsDefined())
+                            {
+                                continue; // 跳过没有 file 的节点
+                            }
+                            apd.file = a["file"].as<std::string>();
+                            if (a["level"].IsDefined())
+                            {
+                                apd.level = LogLevel::fromString(a["level"].as<std::string>());
+                            }
+                            if (a["formatter"].IsDefined())
+                            {
+                                apd.formatter = a["formatter"].as<std::string>();
+                            }
+                        }
+                        else if (type == "ConsoleLogAppender")
+                        {
+                            apd.type = 2;
+                        }
+                        else
+                        {
+                            continue; // 跳过未知类型的节点
+                        }
+
+                        def.appenders.push_back(apd); // 将 appender 添加到 LogDefine 中
+                    }
+                }
+
+                log_defines.insert(def); // 将 LogDefine 添加到 set 中
+            }
+
+            return log_defines; // 返回解析后的结果
+        }
+    };
+
+    template <>
+    class BaseTypeConverter<std::set<LogDefine>, std::string>
+    {
+    public:
+        std::string operator()(const std::set<LogDefine> &logDefines) const
+        {
+            YAML::Node node;
+            for (const auto &logDefine : logDefines)
+            {
+                YAML::Node logNode;
+                logNode["name"] = logDefine.name;
+                logNode["level"] = LogLevel::toString(logDefine.level);
+                logNode["formatter"] = logDefine.formatter;
+
+                YAML::Node appendersNode;
+                for (const auto &appender : logDefine.appenders)
+                {
+                    YAML::Node appenderNode;
+                    appenderNode["type"] = appender.type == 1 ? "FileLogAppender" : "ConsoleLogAppender";
+                    appenderNode["level"] = LogLevel::toString(appender.level);
+                    appenderNode["formatter"] = appender.formatter;
+                    if (appender.type == 1)
+                    {
+                        appenderNode["file"] = appender.file;
+                    }
+                    appendersNode.push_back(appenderNode);
+                }
+                logNode["appenders"] = appendersNode;
+                node.push_back(logNode);
+            }
+            std::stringstream ss;
+            ss << node;
+            return ss.str();
+        }
+    };
+    static ConfigItem<std::set<LogDefine>>::Ptr g_logs = Config::lookup<std::set<LogDefine>>("logs", std::set<LogDefine>(), "system log define");
+    class LogInter
+    {
+    public:
+        LogInter()
+        {
+            if(!g_logs){
+                std::cout<<"g_logs is null"<<std::endl;
+                throw std::runtime_error("g_logs is not initialized");
+            }
+            g_logs->addOnChangeCallback(0x115200, [](const std::set<LogDefine> &old_value, const std::set<LogDefine> &new_value)
+                                        {
+                for(auto &i:new_value){
+                    auto it = old_value.find(i);
+                    if(it == old_value.end()){
+                        //新增的logger
+                        Logger::Ptr logger = GET_LOGGER(i.name);
+                        logger->setLevel(i.level);
+                        if(!i.formatter.empty()){
+                            logger->setFormatter(LogFormatter::Ptr(new LogFormatter(i.formatter)));
+                        }
+                        logger->clearAppenders();
+                        for(auto &a:i.appenders){ 
+                            LogAppender::Ptr appender;
+                            if(a.type == 1){
+                                appender.reset(new FileAppender(a.file));
+                            }else if(a.type == 2){
+                                appender.reset(new ConsoleAppender);
+                            }
+                            
+                            logger->addAppender(appender);
+                        }
+
+
+                    }else{
+                        if(!(i==*it)){
+                            //修改的logger
+                            auto logger = LoggerMgr::getInstance()->getLogger(i.name);
+                            logger->setLevel(i.level);
+                            if(!i.formatter.empty()){
+                                logger->setFormatter(LogFormatter::Ptr(new LogFormatter(i.formatter)));
+                            }
+                            logger->clearAppenders();
+                            for(auto &a:i.appenders){ 
+                                LogAppender::Ptr appender;
+                                if(a.type == 1){
+                                    appender.reset(new FileAppender(a.file));
+                                }else if(a.type == 2){
+                                    appender.reset(new ConsoleAppender);
+                                }
+                                
+                                logger->addAppender(appender);
+                            }
+                        }
+                    }
+
+                    for(auto &i:old_value){
+                        auto it = new_value.find(i);
+                        if(it == new_value.end()){
+                            //删除的logger
+                            auto logger = LoggerMgr::getInstance()->getLogger(i.name);
+                            logger->setLevel(LogLevel::Level::MAX);
+                            
+                        }
+                    }
+                    
+                } });
+        }
+    };
+    static LogInter s_log_inter; // 初始化日志配置项,main函数前执行
+    // 整合配置项中的日志
     void LoggerManager::init()
     {
-        
+
         return;
     }
     Logger::Ptr LoggerManager::getLogger(const std::string &name)
     {
-        Logger::Ptr ret_logger ;
-        if(m_loggers.find(name) == m_loggers.end())
+        Logger::Ptr ret_logger;
+        if (m_loggers.find(name) == m_loggers.end())
         {
-            std::cout<<"Logger "<<name<<" not found, using root logger instead."<<std::endl;
-            ret_logger = m_root;
-        }else{
+            std::cout << "Logger " << name << " not found, create new one." << std::endl;
+            ret_logger = std::make_shared<Logger>(name);
+            m_loggers[name] = ret_logger;
+        }
+        else
+        {
 
             ret_logger = m_loggers[name];
         }
@@ -473,6 +685,7 @@ namespace zhao
         if (!appender->getFormatter())
         {
             appender->setFormatter(m_formatter);
+            appender->setLevel(m_level);
         }
         m_appenders.push_back(appender);
     }
@@ -481,6 +694,33 @@ namespace zhao
     void Logger::delAppender(LogAppender::Ptr appender)
     {
         m_appenders.remove(appender);
+    }
+
+    void Logger::clearAppenders()
+    {
+        m_appenders.clear();
+    }
+
+    std::string Logger::toYamlString()
+    {
+        YAML::Node node;
+        node["name"] = m_name;
+        if (m_level != LogLevel::UNKNOW)
+        {
+            node["level"] = LogLevel::toString(m_level);
+        }
+        if (m_formatter)
+        {
+            node["formatter"] = m_formatter->getPattern();
+        }
+
+        for (auto &i : m_appenders)
+        {
+            node["appenders"].push_back(YAML::Load(i->toYamlString()));
+        }
+        std::stringstream ss;
+        ss << node;
+        return ss.str();
     }
 
     // FileAppender::reopen() implementation
@@ -493,11 +733,57 @@ namespace zhao
         m_filestream.open(m_filename.c_str(), std::ios::app);
         return m_filestream.is_open();
     }
+    std::string FileAppender::toYamlString()
+    {
 
+        YAML::Node node;
+        node["type"] = "FileLogAppender";
+        node["file"] = m_filename;
+        if (m_level != LogLevel::UNKNOW)
+        {
+            node["level"] = LogLevel::toString(m_level);
+        }
+        if (m_formatter)
+        {
+            node["formatter"] = m_formatter->getPattern();
+        }
+        std::stringstream ss;
+        ss << node;
+        return ss.str();
+    }
+    std::string ConsoleAppender::toYamlString()
+    {
+
+        YAML::Node node;
+        node["type"] = "ConsoleLogAppender";
+        if (m_level != LogLevel::UNKNOW)
+        {
+            node["level"] = LogLevel::toString(m_level);
+        }
+        if (m_formatter)
+        {
+            node["formatter"] = m_formatter->getPattern();
+        }
+        std::stringstream ss;
+        ss << node;
+        return ss.str();
+    }
     LoggerManager::LoggerManager()
     {
         m_root = std::make_shared<Logger>("root");
         init();
+    }
+    std::string LoggerManager::toYamlString()
+    {
+        
+        YAML::Node node;
+        for (auto &i : m_loggers)
+        {
+            node.push_back(YAML::Load(i.second->toYamlString()));
+        }
+        std::stringstream ss;
+        ss << node;
+        return ss.str();
     }
 
 } // namespace zhao

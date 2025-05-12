@@ -3,7 +3,7 @@
 #include <string>
 #include <memory>
 #include <boost/lexical_cast.hpp>
-#include  <yaml-cpp/yaml.h>
+#include <yaml-cpp/yaml.h>
 #include <vector>
 #include <map>
 #include <unordered_map>
@@ -27,13 +27,13 @@ namespace zhao
 
     public:
         typedef std::shared_ptr<ConfigItemBase> Ptr;
-        ConfigItemBase(std::string name, std::string desc) : m_name(name), m_desc(desc) {
-            //把m_name转小写
+        ConfigItemBase(std::string name, std::string desc) : m_name(name), m_desc(desc)
+        {
+            // 把m_name转小写
             for (size_t i = 0; i < m_name.size(); i++)
             {
                 if (m_name[i] >= 'A' && m_name[i] <= 'Z')
                     m_name[i] = m_name[i] - 'A' + 'a';
-                
             }
         }
         virtual ~ConfigItemBase() {}
@@ -56,22 +56,22 @@ namespace zhao
     };
 
     template <class T>
-    class BaseTypeConverter<std::string,std::vector<T>>
+    class BaseTypeConverter<std::string, std::vector<T>>
     {
     public:
         std::vector<T> operator()(const std::string &from)
-        { 
-            
-            YAML::Node node = YAML::Load(from); //node为数组类型
-            //如果node不是sequence类型，抛出异常
+        {
+
+            YAML::Node node = YAML::Load(from); // node为数组类型
+            // 如果node不是sequence类型，抛出异常
             if (!node.IsSequence())
                 throw std::logic_error("node is not a sequence");
             typename std::vector<T> vec;
             for (size_t i = 0; i < node.size(); i++)
             {
                 std::stringstream ss;
-                ss<< node[i];
-                vec.push_back( BaseTypeConverter<std::string,T>()(ss.str()));
+                ss << node[i];
+                vec.push_back(BaseTypeConverter<std::string, T>()(ss.str()));
             }
 
             return vec;
@@ -79,38 +79,39 @@ namespace zhao
     };
 
     template <class T>
-    class BaseTypeConverter<std::vector<T>,std::string>
+    class BaseTypeConverter<std::vector<T>, std::string>
     {
     public:
         std::string operator()(const std::vector<T> &from)
         {
             YAML::Node node;
-            for(auto i:from){
-                node.push_back(BaseTypeConverter<T,std::string>()(i));
+            for (auto i : from)
+            {
+                node.push_back(BaseTypeConverter<T, std::string>()(i));
             }
             std::stringstream ss;
-            ss<<node;
+            ss << node;
             return ss.str();
         }
     };
 
     template <class T>
-    class BaseTypeConverter<std::string,std::list<T>>
+    class BaseTypeConverter<std::string, std::list<T>>
     {
     public:
         std::list<T> operator()(const std::string &from)
-        { 
-            
-            YAML::Node node = YAML::Load(from); //node为数组类型
-            //如果node不是sequence类型，抛出异常
+        {
+
+            YAML::Node node = YAML::Load(from); // node为数组类型
+            // 如果node不是sequence类型，抛出异常
             if (!node.IsSequence())
                 throw std::logic_error("node is not a sequence");
             typename std::list<T> vec;
             for (size_t i = 0; i < node.size(); i++)
             {
                 std::stringstream ss;
-                ss<< node[i];
-                vec.push_back( BaseTypeConverter<std::string,T>()(ss.str()));
+                ss << node[i];
+                vec.push_back(BaseTypeConverter<std::string, T>()(ss.str()));
             }
 
             return vec;
@@ -118,38 +119,39 @@ namespace zhao
     };
 
     template <class T>
-    class BaseTypeConverter<std::list<T>,std::string>
+    class BaseTypeConverter<std::list<T>, std::string>
     {
     public:
         std::string operator()(const std::list<T> &from)
         {
             YAML::Node node;
-            for(auto i:from){
-                node.push_back(BaseTypeConverter<T,std::string>()(i));
+            for (auto i : from)
+            {
+                node.push_back(BaseTypeConverter<T, std::string>()(i));
             }
             std::stringstream ss;
-            ss<<node;
+            ss << node;
             return ss.str();
         }
     };
 
     template <class T>
-    class BaseTypeConverter<std::string,std::set<T>>
+    class BaseTypeConverter<std::string, std::set<T>>
     {
     public:
         std::set<T> operator()(const std::string &from)
-        { 
-            
-            YAML::Node node = YAML::Load(from); //node为数组类型
-            //如果node不是sequence类型，抛出异常
+        {
+
+            YAML::Node node = YAML::Load(from); // node为数组类型
+            // 如果node不是sequence类型，抛出异常
             if (!node.IsSequence())
                 throw std::logic_error("node is not a sequence");
             typename std::set<T> set;
             for (size_t i = 0; i < node.size(); i++)
             {
                 std::stringstream ss;
-                ss<< node[i];
-                set.insert( BaseTypeConverter<std::string,T>()(ss.str()));
+                ss << node[i];
+                set.insert(BaseTypeConverter<std::string, T>()(ss.str()));
             }
 
             return set;
@@ -157,37 +159,38 @@ namespace zhao
     };
 
     template <class T>
-    class BaseTypeConverter<std::set<T>,std::string>
+    class BaseTypeConverter<std::set<T>, std::string>
     {
     public:
         std::string operator()(const std::set<T> &from)
         {
             YAML::Node node;
-            for(auto i:from){
-                node.push_back(BaseTypeConverter<T,std::string>()(i));
+            for (auto i : from)
+            {
+                node.push_back(BaseTypeConverter<T, std::string>()(i));
             }
             std::stringstream ss;
-            ss<<node;
+            ss << node;
             return ss.str();
         }
     };
     template <class T>
-    class BaseTypeConverter<std::string,std::unordered_set<T>>
+    class BaseTypeConverter<std::string, std::unordered_set<T>>
     {
     public:
         std::unordered_set<T> operator()(const std::string &from)
-        { 
-            
-            YAML::Node node = YAML::Load(from); //node为数组类型
-            //如果node不是sequence类型，抛出异常
+        {
+
+            YAML::Node node = YAML::Load(from); // node为数组类型
+            // 如果node不是sequence类型，抛出异常
             if (!node.IsSequence())
                 throw std::logic_error("node is not a sequence");
             typename std::unordered_set<T> set;
             for (size_t i = 0; i < node.size(); i++)
             {
                 std::stringstream ss;
-                ss<< node[i];
-                set.insert( BaseTypeConverter<std::string,T>()(ss.str()));
+                ss << node[i];
+                set.insert(BaseTypeConverter<std::string, T>()(ss.str()));
             }
 
             return set;
@@ -195,36 +198,38 @@ namespace zhao
     };
 
     template <class T>
-    class BaseTypeConverter<std::unordered_set<T>,std::string>
+    class BaseTypeConverter<std::unordered_set<T>, std::string>
     {
     public:
         std::string operator()(const std::unordered_set<T> &from)
         {
             YAML::Node node;
-            for(auto i:from){
-                node.push_back(BaseTypeConverter<T,std::string>()(i));
+            for (auto i : from)
+            {
+                node.push_back(BaseTypeConverter<T, std::string>()(i));
             }
             std::stringstream ss;
-            ss<<node;
+            ss << node;
             return ss.str();
         }
     };
     template <class T>
-    class BaseTypeConverter<std::string,std::map<std::string,T>>
+    class BaseTypeConverter<std::string, std::map<std::string, T>>
     {
     public:
-        std::map<std::string,T> operator()(const std::string &from)
-        { 
-            
-            YAML::Node node = YAML::Load(from); //node为数组类型
-            //如果node不是sequence类型，抛出异常
+        std::map<std::string, T> operator()(const std::string &from)
+        {
+
+            YAML::Node node = YAML::Load(from); // node为数组类型
+            // 如果node不是sequence类型，抛出异常
             if (!node.IsMap())
                 throw std::logic_error("node is not a map");
-            typename std::map<std::string,T> map;
-            for(auto it = node.begin(); it != node.end(); ++it){
+            typename std::map<std::string, T> map;
+            for (auto it = node.begin(); it != node.end(); ++it)
+            {
                 std::stringstream ss;
-                ss<< it->second;
-                map.insert(std::make_pair(it->first.Scalar(),BaseTypeConverter<std::string,T>()(ss.str())));
+                ss << it->second;
+                map.insert(std::make_pair(it->first.Scalar(), BaseTypeConverter<std::string, T>()(ss.str())));
             }
 
             return map;
@@ -232,37 +237,39 @@ namespace zhao
     };
 
     template <class T>
-    class BaseTypeConverter<std::map<std::string,T>,std::string>
+    class BaseTypeConverter<std::map<std::string, T>, std::string>
     {
     public:
-        std::string operator()(const std::map<std::string,T> &from)
+        std::string operator()(const std::map<std::string, T> &from)
         {
             YAML::Node node;
-            for(auto i:from){
-                node[i.first] = YAML::Load(BaseTypeConverter<T,std::string>()(i.second));
+            for (auto i : from)
+            {
+                node[i.first] = YAML::Load(BaseTypeConverter<T, std::string>()(i.second));
             }
             std::stringstream ss;
-            ss<<node;
+            ss << node;
             return ss.str();
         }
     };
 
     template <class T>
-    class BaseTypeConverter<std::string,std::unordered_map<std::string,T>>
+    class BaseTypeConverter<std::string, std::unordered_map<std::string, T>>
     {
     public:
-        std::unordered_map<std::string,T> operator()(const std::string &from)
-        { 
-            
-            YAML::Node node = YAML::Load(from); //node为数组类型
-            //如果node不是sequence类型，抛出异常
+        std::unordered_map<std::string, T> operator()(const std::string &from)
+        {
+
+            YAML::Node node = YAML::Load(from); // node为数组类型
+            // 如果node不是sequence类型，抛出异常
             if (!node.IsMap())
                 throw std::logic_error("node is not a map");
-            typename std::unordered_map<std::string,T> map;
-            for(auto it = node.begin(); it != node.end(); ++it){
+            typename std::unordered_map<std::string, T> map;
+            for (auto it = node.begin(); it != node.end(); ++it)
+            {
                 std::stringstream ss;
-                ss<< it->second;
-                map.insert(std::make_pair(it->first.Scalar(),BaseTypeConverter<std::string,T>()(ss.str())));
+                ss << it->second;
+                map.insert(std::make_pair(it->first.Scalar(), BaseTypeConverter<std::string, T>()(ss.str())));
             }
 
             return map;
@@ -270,44 +277,47 @@ namespace zhao
     };
 
     template <class T>
-    class BaseTypeConverter<std::unordered_map<std::string,T>,std::string>
+    class BaseTypeConverter<std::unordered_map<std::string, T>, std::string>
     {
     public:
-        std::string operator()(const std::unordered_map<std::string,T> &from)
+        std::string operator()(const std::unordered_map<std::string, T> &from)
         {
             YAML::Node node;
-            for(auto i:from){
-                node[i.first] = YAML::Load(BaseTypeConverter<T,std::string>()(i.second));
+            for (auto i : from)
+            {
+                node[i.first] = YAML::Load(BaseTypeConverter<T, std::string>()(i.second));
             }
             std::stringstream ss;
-            ss<<node;
+            ss << node;
             return ss.str();
         }
     };
-    //仿函数  fromStr  toStr
-    template <class T,class fromStr=BaseTypeConverter<std::string,T>,class toStr=BaseTypeConverter<T,std::string>   >
+    // 仿函数  fromStr  toStr
+    template <class T, class fromStr = BaseTypeConverter<std::string, T>, class toStr = BaseTypeConverter<T, std::string>>
     class ConfigItem : public ConfigItemBase
     {
-    
 
     public:
         ConfigItem(const std::string &name, const std::string &desc, const T &value)
-            : ConfigItemBase(name, desc), m_value(value) {
-
-            }
+            : ConfigItemBase(name, desc), m_value(value)
+        {
+        }
 
         typedef std::shared_ptr<ConfigItem> Ptr;
-        typedef std::function<void(const T&old_value,const T&new_value)> onChangeCallback;
+        typedef std::function<void(const T &old_value, const T &new_value)> onChangeCallback;
         T getvalue()
         {
             return m_value;
         }
-        void setvalue(const T &value){
-            if(value == m_value)
+        void setvalue(const T &value)
+        {
+            if (value == m_value)
                 return;
-            else{
-                for(auto &i:m_onChangeCallbacks){
-                    i.second(m_value,value);//值改变后调用注册的回调函数
+            else
+            {
+                for (auto &i : m_onChangeCallbacks)
+                {
+                    i.second(m_value, value); // 值改变后调用注册的回调函数
                 }
                 m_value = value;
             }
@@ -316,7 +326,7 @@ namespace zhao
         {
             try
             {
-                return toStr()(m_value); //临时对象仿函数
+                return toStr()(m_value); // 临时对象仿函数
             }
             catch (const std::exception &e)
             {
@@ -328,10 +338,10 @@ namespace zhao
         {
             try
             {
-                setvalue(fromStr()(val));//临时对象仿函数
+                setvalue(fromStr()(val)); // 临时对象仿函数
                 return true;
             }
-            catch(const std::exception& e)
+            catch (const std::exception &e)
             {
                 ZHAO_LOG_ERROR(GET_ROOT_LOGGER()) << "ConfigItem::fromString() exception: " << e.what();
             }
@@ -347,7 +357,7 @@ namespace zhao
         }
         onChangeCallback getOnChangeCallbacks(uint64_t id)
         {
-            if(m_onChangeCallbacks.find(id) != m_onChangeCallbacks.end())
+            if (m_onChangeCallbacks.find(id) != m_onChangeCallbacks.end())
                 return m_onChangeCallbacks[id];
             return nullptr;
         }
@@ -355,10 +365,10 @@ namespace zhao
         {
             m_onChangeCallbacks.clear();
         }
-        
+
     private:
         T m_value;
-        std::map<uint64_t,onChangeCallback> m_onChangeCallbacks;
+        std::map<uint64_t, onChangeCallback> m_onChangeCallbacks;
     };
 
     class Config
@@ -370,37 +380,47 @@ namespace zhao
         /**
          * @breif 有就返回，没有创建
          */
-        template<typename T>
+        template <typename T>
         static typename ConfigItem<T>::Ptr lookup(const std::string &name,
-                                                   const T &value,
+                                                  const T &value,
                                                   const std::string &desc)
         {
-            auto cfg = m_configs.find(name);
-            //如果找到了直接返回
-            if (cfg != m_configs.end())
+            auto cfg = getConfigs().find(name);
+            // 如果找到了直接返回
+            if (cfg != getConfigs().end())
             {
                 return std::dynamic_pointer_cast<ConfigItem<T>>(cfg->second);
             }
-            //没找到创建并返回
-            m_configs[name] = std::make_shared<ConfigItem<T>>(name, desc, value);
-            return std::dynamic_pointer_cast<ConfigItem<T>>(m_configs[name]);
-            
+            // 没找到创建并返回
+            auto item = std::make_shared<ConfigItem<T>>(name, desc, value);
+            if (!item)
+            {
+                std::cerr << "Failed to create ConfigItem for " << name << std::endl;
+            }
+            getConfigs()[name] = item;
+            //getConfigs()[name] = std::make_shared<ConfigItem<T>>(name, desc, value);
+            return std::dynamic_pointer_cast<ConfigItem<T>>(item);
         }
         /**
          * @brief 查找配置项，没有返回空指针
          */
-        template<typename T>
+        template <typename T>
         static typename ConfigItem<T>::Ptr find(const std::string &name)
         {
-            return std::dynamic_pointer_cast<ConfigItem<T>>(m_configs[name]);
+            return std::dynamic_pointer_cast<ConfigItem<T>>(getConfigs()[name]);
         }
 
         static void loadYamlToConfig(const YAML::Node &root);
+
     private:
-        static ConfigMap m_configs;
+        static ConfigMap &getConfigs()
+        {
+            static ConfigMap m_configs;
+            return m_configs;
+        }
+
     };
 
 } // namespace zhao
-
 
 #endif
