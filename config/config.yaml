@@ -1,6 +1,6 @@
 logs:
   - name: "system"
-    level: "DEBUG"
+    level: "INFO"
     formatter: "%d%T%m%n"
     appenders:
       - type: "FileLogAppender"

@@ -682,9 +682,15 @@ namespace zhao
     // Logger::addAppender() implementation
     void Logger::addAppender(LogAppender::Ptr appender)
     {
+
         if (!appender->getFormatter())
         {
-            appender->setFormatter(m_formatter);
+            LogFormatter::Ptr fmt ;
+            if(m_formatter)
+                fmt = m_formatter;
+            else 
+                fmt = LogFormatter::Ptr(new LogFormatter(LOG_DEFAULT_PATTERN));
+            appender->setFormatter(fmt);
             appender->setLevel(m_level);
         }
         m_appenders.push_back(appender);
