@@ -28,6 +28,7 @@ namespace zhao
             throw std::logic_error("pthread_create error");
         }
         m_arg = arg;
+        m_sem.wait(); //  等待线程创建成功
     }
 
     Thread::~Thread()
@@ -79,6 +80,8 @@ namespace zhao
 
         ThreadFunc func;
         func.swap(thread->m_func);
+        thread->m_sem.notify();
+        
         func(thread->m_arg);
         // thread->m_func(thread->m_arg);
         return nullptr;

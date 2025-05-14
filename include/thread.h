@@ -5,6 +5,8 @@
 #include <thread>
 #include <functional>
 #include <string>
+
+#include "ipc.h"
 #include "utils.h"
 namespace zhao
 {
@@ -52,6 +54,7 @@ namespace zhao
         std::string m_name;
         ThreadFunc m_func;
         void* m_arg;
+        Semphore m_sem;
 
     };
 } // namespace zhao

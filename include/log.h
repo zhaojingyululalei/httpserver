@@ -13,6 +13,7 @@
 #include <stdarg.h>
 #include "utils.h"
 #include "singleton.h"
+#include "ipc.h"
 
 #define ZHAO_LOG(logger, level)      \
     if (logger->getLevel() <= level) \
