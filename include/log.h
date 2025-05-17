@@ -194,15 +194,17 @@ namespace zhao
     protected:
         LogLevel::Level m_level;       // 输出登记
         LogFormatter::Ptr m_formatter; // 格式刷
+        Mutex m_mutex;
     public:
         typedef std::shared_ptr<LogAppender> Ptr;
         virtual ~LogAppender() {};
 
         virtual void log(LogLevel::Level level, LogEvent::Ptr event) = 0;
         virtual std::string toYamlString(void) = 0;
-        void setFormatter(LogFormatter::Ptr formatter) { m_formatter = formatter; }
+        void setFormatter(LogFormatter::Ptr formatter) { Mutex::MutexLockGuardType guard(m_mutex);m_formatter = formatter; }
         void setLevel(LogLevel::Level level) { m_level = level; }
         LogFormatter::Ptr getFormatter(void) { return m_formatter; }
+        Mutex& getMutex() { return m_mutex; }
     };
 
     class ConsoleAppender : public LogAppender
@@ -236,6 +238,7 @@ namespace zhao
         LogLevel::Level m_level;                 // 日志等级
         std::list<LogAppender::Ptr> m_appenders; // 输出目的地集合
         LogFormatter::Ptr m_formatter;           // 日志格默认格式器
+        Mutex m_mutex;
     public:
         typedef std::shared_ptr<Logger> Ptr;
         Logger(const std::string &name = "default");
@@ -258,7 +261,7 @@ namespace zhao
 
         LogLevel::Level getLevel() { return m_level; }
         void setLevel(LogLevel::Level level) { m_level = level; }
-        void setFormatter(LogFormatter::Ptr formatter) { m_formatter = formatter; }
+        void setFormatter(LogFormatter::Ptr formatter) { Mutex::MutexLockGuardType guard(m_mutex);m_formatter = formatter; }
         std::string toYamlString( );
     };
 
@@ -300,7 +303,7 @@ namespace zhao
     private:
         std::map<std::string, Logger::Ptr> m_loggers;
         Logger::Ptr m_root;
-
+        Mutex m_mutex;
     public:
         LoggerManager();
         // 根据配置系统获取日志

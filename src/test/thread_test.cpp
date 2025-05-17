@@ -1,11 +1,22 @@
-#include "thread.h"
 #include <vector>
 #include <iostream>
+#include <yaml-cpp/yaml.h>
+
+
+#include "thread.h"
+#include "log.h"
+#include "config.h"
 void function(void* arg){
-    std::cout<<"thread_id: "<<zhao::Thread::getCur()->getTid()
-    <<" thread_name: "<<zhao::Thread::getCurName()<<std::endl;  
+    YAML::Node root = YAML::LoadFile("config/config.yaml");
+    zhao::Config::loadYamlToConfig(root);
+    // static zhao::Logger::Ptr root_log = GET_ROOT_LOGGER();
+    // ZHAO_LOG_FATAL(root_log) << "hello root"<<" i am thread:"<<zhao::getThreadName() << "\n ";
+    static zhao::Logger::Ptr system_log = GET_LOGGER("system");
+    ZHAO_LOG_FATAL(system_log) << "hello system"<<" i am thread:"<<zhao::getThreadName() << "\n ";
 }
 static void test01(void){
+    YAML::Node root = YAML::LoadFile("config/config.yaml");
+    zhao::Config::loadYamlToConfig(root);
     int thread_count = 5;
     std::vector<zhao::Thread::Ptr> threads;
     for (int i = 0; i < thread_count; i++) {
@@ -17,6 +28,11 @@ static void test01(void){
         thrd->join();
     }
 }
+
+static void test02(){
+
+}
 void thread_test(){
+     
     test01();
 }

@@ -14,6 +14,7 @@
 #include <list>
 
 #include "log.h"
+#include "ipc.h"
 namespace zhao
 {
     /**
@@ -307,25 +308,35 @@ namespace zhao
         typedef std::function<void(const T &old_value, const T &new_value)> onChangeCallback;
         T getvalue()
         {
+            RWMutex::ReadLockGuardType lock(m_mutex);
             return m_value;
         }
         void setvalue(const T &value)
         {
-            if (value == m_value)
+            m_mutex.rdlock();
+            if (value == m_value){
+
+                m_mutex.unlock();
                 return;
+            }
             else
             {
                 for (auto &i : m_onChangeCallbacks)
                 {
                     i.second(m_value, value); // 值改变后调用注册的回调函数
                 }
-                m_value = value;
+                m_mutex.unlock();
+                {
+                    RWMutex::WriteLockGuardType lock(m_mutex);
+                    m_value = value;
+                }
             }
         }
         std::string toString() override
         {
             try
             {
+                RWMutex::ReadLockGuardType lock(m_mutex);
                 return toStr()(m_value); // 临时对象仿函数
             }
             catch (const std::exception &e)
@@ -347,28 +358,35 @@ namespace zhao
             }
             return false;
         }
-        void addOnChangeCallback(uint64_t id, onChangeCallback callback)
+        uint64_t addOnChangeCallback(onChangeCallback callback)
         {
-            m_onChangeCallbacks[id] = callback;
+            static uint64_t s_id = 0;
+            RWMutex::WriteLockGuardType lock(m_mutex);
+            m_onChangeCallbacks[s_id++] = callback;
+            return s_id;
         }
         void delOnChangeCallback(uint64_t id)
         {
+            RWMutex::WriteLockGuardType lock(m_mutex);
             m_onChangeCallbacks.erase(id);
         }
         onChangeCallback getOnChangeCallbacks(uint64_t id)
         {
+            RWMutex::ReadLockGuardType lock(m_mutex);
             if (m_onChangeCallbacks.find(id) != m_onChangeCallbacks.end())
                 return m_onChangeCallbacks[id];
             return nullptr;
         }
         void clearOnChangeCallbacks()
         {
+            RWMutex::WriteLockGuardType lock(m_mutex);
             m_onChangeCallbacks.clear();
         }
 
     private:
         T m_value;
         std::map<uint64_t, onChangeCallback> m_onChangeCallbacks;
+        RWMutex m_mutex;
     };
 
     class Config
@@ -385,20 +403,25 @@ namespace zhao
                                                   const T &value,
                                                   const std::string &desc)
         {
+            getMutex().rdlock();
             auto cfg = getConfigs().find(name);
             // 如果找到了直接返回
             if (cfg != getConfigs().end())
             {
+                getMutex().unlock();
                 return std::dynamic_pointer_cast<ConfigItem<T>>(cfg->second);
             }
+            getMutex().unlock();
             // 没找到创建并返回
+            getMutex().wrlock();
             auto item = std::make_shared<ConfigItem<T>>(name, desc, value);
             if (!item)
             {
                 std::cerr << "Failed to create ConfigItem for " << name << std::endl;
             }
             getConfigs()[name] = item;
-            //getConfigs()[name] = std::make_shared<ConfigItem<T>>(name, desc, value);
+            getMutex().unlock();
+            // getConfigs()[name] = std::make_shared<ConfigItem<T>>(name, desc, value);
             return std::dynamic_pointer_cast<ConfigItem<T>>(item);
         }
         /**
@@ -407,18 +430,24 @@ namespace zhao
         template <typename T>
         static typename ConfigItem<T>::Ptr find(const std::string &name)
         {
+            RWMutex::ReadLockGuardType lock(getMutex());
             return std::dynamic_pointer_cast<ConfigItem<T>>(getConfigs()[name]);
         }
 
         static void loadYamlToConfig(const YAML::Node &root);
 
     private:
+    //防止初始化顺序错误
+        static RWMutex& getMutex()
+        {
+            static RWMutex s_mutex;
+            return s_mutex;
+        }
         static ConfigMap &getConfigs()
         {
-            static ConfigMap m_configs;
-            return m_configs;
+            static ConfigMap s_configs;
+            return s_configs;
         }
-
     };
 
 } // namespace zhao

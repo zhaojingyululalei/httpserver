@@ -14,6 +14,7 @@ namespace zhao
         if (sem_init(&m_sem, 0, count) < 0)
         {
             throw std::logic_error("sem init error");
+            
         }
     }
     Semphore::~Semphore()

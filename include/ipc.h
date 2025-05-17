@@ -2,7 +2,7 @@
 #define __IPC_H
 #include<stdint.h>
 #include<semaphore.h>
-
+#include <atomic>
 namespace zhao
 {
     class Semphore
@@ -50,13 +50,14 @@ namespace zhao
         }
     private:
         T m_mutex;
+        
         bool m_locked;
     };
 
     class Mutex
     {
     public:
-        typedef LockGuard<Mutex> MutexLockGuard;
+        typedef LockGuard<Mutex> MutexLockGuardType;
         Mutex(){
             pthread_mutex_init(&m_mutex, nullptr);
         }
@@ -77,6 +78,32 @@ namespace zhao
     private:
         pthread_mutex_t m_mutex;
     };
+
+    class SpinMutex
+    {
+    public:
+        typedef LockGuard<SpinMutex> SpinLockGuardType;
+        SpinMutex(){
+            pthread_spin_init(&m_mutex, PTHREAD_PROCESS_PRIVATE);
+        }
+        ~SpinMutex()
+        {
+            pthread_spin_destroy(&m_mutex);
+        }
+        void lock()
+        {
+            pthread_spin_lock(&m_mutex);
+        }
+        void unlock()
+        {
+            pthread_spin_unlock(&m_mutex);
+        }
+
+    private:
+        pthread_spinlock_t m_mutex;
+    };
+
+
     template<class T>
     class ReadLockGuard
     {

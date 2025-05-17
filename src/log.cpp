@@ -503,7 +503,7 @@ namespace zhao
                 std::cout<<"g_logs is null"<<std::endl;
                 throw std::runtime_error("g_logs is not initialized");
             }
-            g_logs->addOnChangeCallback(0x115200, [](const std::set<LogDefine> &old_value, const std::set<LogDefine> &new_value)
+            g_logs->addOnChangeCallback( [](const std::set<LogDefine> &old_value, const std::set<LogDefine> &new_value)
                                         {
                 for(auto &i:new_value){
                     auto it = old_value.find(i);
@@ -571,6 +571,7 @@ namespace zhao
     }
     Logger::Ptr LoggerManager::getLogger(const std::string &name)
     {
+        Mutex::MutexLockGuardType guard(m_mutex);   
         Logger::Ptr ret_logger;
         if (m_loggers.find(name) == m_loggers.end())
         {
@@ -600,6 +601,7 @@ namespace zhao
     // FileAppender::log() implementation
     void FileAppender::log(LogLevel::Level level, LogEvent::Ptr event)
     {
+        Mutex::MutexLockGuardType guard(m_mutex);
         if (level >= m_level)
         {
             m_filestream << m_formatter->format(event);
@@ -609,6 +611,7 @@ namespace zhao
     // ConsoleAppender::log() implementation
     void ConsoleAppender::log(LogLevel::Level level, LogEvent::Ptr event)
     {
+        Mutex::MutexLockGuardType guard(m_mutex);
         if (level >= m_level)
         {
             std::cout << m_formatter->format(event) << std::endl;
@@ -630,6 +633,7 @@ namespace zhao
     // Logger::log() implementation
     void Logger::log(LogLevel::Level level, LogEvent::Ptr event)
     {
+        Mutex::MutexLockGuardType guard(m_mutex);
         if (m_appenders.empty())
         {
             std::cout << "appenders is empty" << std::endl;
@@ -682,10 +686,11 @@ namespace zhao
     // Logger::addAppender() implementation
     void Logger::addAppender(LogAppender::Ptr appender)
     {
-
+        Mutex::MutexLockGuardType guard(m_mutex);
         if (!appender->getFormatter())
         {
             LogFormatter::Ptr fmt ;
+            Mutex::MutexLockGuardType guard(appender->getMutex());
             if(m_formatter)
                 fmt = m_formatter;
             else 
@@ -699,16 +704,19 @@ namespace zhao
     // Logger::delAppender() implementation
     void Logger::delAppender(LogAppender::Ptr appender)
     {
+        Mutex::MutexLockGuardType guard(m_mutex);
         m_appenders.remove(appender);
     }
 
     void Logger::clearAppenders()
     {
+        Mutex::MutexLockGuardType guard(m_mutex);
         m_appenders.clear();
     }
 
     std::string Logger::toYamlString()
     {
+        Mutex::MutexLockGuardType guard(m_mutex);
         YAML::Node node;
         node["name"] = m_name;
         if (m_level != LogLevel::UNKNOW)
@@ -732,6 +740,7 @@ namespace zhao
     // FileAppender::reopen() implementation
     bool FileAppender::reopen(void)
     {
+        Mutex::MutexLockGuardType guard(m_mutex);
         if (m_filestream)
         {
             m_filestream.close();
@@ -741,7 +750,7 @@ namespace zhao
     }
     std::string FileAppender::toYamlString()
     {
-
+        Mutex::MutexLockGuardType guard(m_mutex);
         YAML::Node node;
         node["type"] = "FileLogAppender";
         node["file"] = m_filename;
@@ -759,7 +768,7 @@ namespace zhao
     }
     std::string ConsoleAppender::toYamlString()
     {
-
+        Mutex::MutexLockGuardType guard(m_mutex);
         YAML::Node node;
         node["type"] = "ConsoleLogAppender";
         if (m_level != LogLevel::UNKNOW)
@@ -781,7 +790,7 @@ namespace zhao
     }
     std::string LoggerManager::toYamlString()
     {
-        
+        Mutex::MutexLockGuardType guard(m_mutex);
         YAML::Node node;
         for (auto &i : m_loggers)
         {

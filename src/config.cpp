@@ -4,7 +4,7 @@
 #include <yaml-cpp/yaml.h>
 namespace zhao
 {
-    //Config::ConfigMap Config::m_configs;
+    // Config::ConfigMap Config::m_configs;
 
     static void getAllYamlNode(const std::string prefix, const YAML::Node &node, std::list<std::pair<std::string, YAML::Node>> &nodesList)
     {
@@ -13,7 +13,7 @@ namespace zhao
         {
             for (auto it = node.begin(); it != node.end(); ++it)
             {
-                
+
                 std::string newPrefix = prefix.empty() ? it->first.Scalar() : prefix + "." + it->first.Scalar();
                 // 递归处理子节点
                 getAllYamlNode(newPrefix, it->second, nodesList);
@@ -22,6 +22,7 @@ namespace zhao
     }
     void Config::loadYamlToConfig(const YAML::Node &root)
     {
+
         std::list<std::pair<std::string, YAML::Node>> nodesList;
 
         getAllYamlNode("", root, nodesList);
@@ -35,9 +36,12 @@ namespace zhao
             }
             // 查找有没有定义该配置项，如果没定义，这个yaml_node不处理
             // 如果找到了该配置项，修改值
+
+            getMutex().rdlock();
             auto cfgitem = getConfigs().find(key);
             if (cfgitem != getConfigs().end())
             {
+                getMutex().unlock();
                 ConfigItemBase::Ptr configItem = cfgitem->second;
                 if (configItem)
                 {
@@ -52,6 +56,9 @@ namespace zhao
                         configItem->fromString(ss.str());
                     }
                 }
+            }
+            else{
+                getMutex().unlock();
             }
         }
     }
