@@ -6,6 +6,7 @@
 #include "thread.h"
 #include "log.h"
 #include "config.h"
+#include "utils.h"
 void function(void* arg){
     YAML::Node root = YAML::LoadFile("config/config.yaml");
     zhao::Config::loadYamlToConfig(root);
@@ -28,11 +29,12 @@ static void test01(void){
         thrd->join();
     }
 }
-
+static zhao::Logger::Ptr g_logger = GET_ROOT_LOGGER();
 static void test02(){
-
+    //ZHAO_LOG_INFO(g_logger) << zhao::backtraceToString();
+    ZHAO_LOG_ASSERT(1 == 2);
 }
 void thread_test(){
      
-    test01();
+    test02();
 }

@@ -6,9 +6,12 @@
 #include <pthread.h>
 #include <cstring>
 #include <stdarg.h>
+#include <execinfo.h>
+#include <sstream>
+#include "log.h"
 namespace zhao
 {
-
+    static Logger::Ptr system_log = GET_LOGGER("system");
     int64_t getTimeStamp()
     {
         struct timeval tv;
@@ -37,7 +40,7 @@ namespace zhao
             std::cerr << "Thread name is too long (max 15 characters)!" << std::endl;
             return;
         }
-        
+
         int ret = pthread_setname_np(thread, name.c_str());
         if (ret != 0)
         {
@@ -56,7 +59,41 @@ namespace zhao
         }
         return std::string(name);
     }
-    std::string MessageFormat(const char *fmt, ...) {
+    void backtrace(std::vector<std::string> &bt, int size, int skip)
+    {
+        void **callstack = new void *[size];
+        int nMaxFrames = ::backtrace(callstack, size);
+        char **symbols = backtrace_symbols(callstack, nMaxFrames);
+
+        if (symbols != nullptr)
+        {
+            for (int i = skip; i < nMaxFrames && i < size; ++i)
+            {
+                bt.push_back(symbols[i]);
+            }
+            free(symbols);
+        }else{
+            ZHAO_LOG_FATAL(system_log) << "backtrace_symbols error";
+        }
+
+        delete[] callstack;
+    }
+    std::string backtraceToString(int size, int skip)
+    {
+        std::stringstream ss;
+        std::vector<std::string> bt;
+        backtrace(bt, size, skip); // 调用上面的 backtrace 函数填充 vector
+
+        ss << "Backtrace:" << std::endl;
+        for (const auto &frame : bt)
+        {
+            ss << frame << std::endl;
+        }
+
+        return ss.str();
+    }
+    std::string MessageFormat(const char *fmt, ...)
+    {
         va_list ap;
         va_start(ap, fmt);
         char buffer[1024]; // 假设最大长度为 1024

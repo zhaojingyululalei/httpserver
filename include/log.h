@@ -14,6 +14,7 @@
 #include "utils.h"
 #include "singleton.h"
 #include "ipc.h"
+#include <assert.h>
 
 #define ZHAO_LOG(logger, level)      \
     if (logger->getLevel() <= level) \
@@ -24,6 +25,8 @@
 #define ZHAO_LOG_WARN(logger) ZHAO_LOG(logger, zhao::LogLevel::WARN)
 #define ZHAO_LOG_ERROR(logger) ZHAO_LOG(logger, zhao::LogLevel::ERROR)
 #define ZHAO_LOG_FATAL(logger) ZHAO_LOG(logger, zhao::LogLevel::FATAL)
+
+
 
 #define ZHAO_LOG_FMT(logger, level, fmt, ...) \
     if (logger->getLevel() <= level)          \
@@ -42,6 +45,12 @@
 
 #define GET_ROOT_LOGGER() zhao::LoggerMgr::getInstance()->getRoot()
 #define GET_LOGGER(name) zhao::LoggerMgr::getInstance()->getLogger(name)
+#define ZHAO_LOG_ASSERT(x) \
+    if (!(x)) { \
+        ZHAO_LOG_ERROR(GET_ROOT_LOGGER())<< "ASSERTION: "<<#x << " backtrace: \n"<<zhao::backtraceToString();\
+        assert(x);\
+    } 
+
 #define LOG_DEFAULT_LEVEL 0
 
 #define LOG_DEFAULT_PATTERN "time:%d  |  tid:%t  |  threadname:%N  |  fiberid:%F  |  dbg:[%p]  |  logger:[%c]  |  file:%f  |  line:%l  |  content:%m%n"
