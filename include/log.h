@@ -53,7 +53,7 @@
 
 #define LOG_DEFAULT_LEVEL 0
 
-#define LOG_DEFAULT_PATTERN "time:%d  |  tid:%t  |  threadname:%N  |  fiberid:%F  |  dbg:[%p]  |  logger:[%c]  |  file:%f  |  line:%l  |  content:%m%n"
+#define LOG_DEFAULT_PATTERN "time:%d  |  tid:%t  |  threadname:%N  |  fiberid:%F  |  dbg:[%p]  |  logger:[%c]  |  file:%f  |  line:%l  |  content==>%m%n"
 
 namespace zhao
 {

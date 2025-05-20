@@ -9,6 +9,7 @@
 #include <execinfo.h>
 #include <sstream>
 #include "log.h"
+#include "fiber.h"
 namespace zhao
 {
     static Logger::Ptr system_log = GET_LOGGER("system");
@@ -26,6 +27,10 @@ namespace zhao
 
     fid_t getFiberId()
     {
+        Fiber::Ptr cur = Fiber::getThis();
+        if(cur){
+            return cur->getId();
+        }
         return 0;
     }
     int64_t getElapse()
