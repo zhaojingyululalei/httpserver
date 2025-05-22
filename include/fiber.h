@@ -29,8 +29,12 @@ namespace zhao
         void swapIn();
         //将当前子协程切换到后台，主协程执行
         void swapOut();
+        void  call();
         //获取当前协程id
         uint64_t getId();
+        State getState() const{
+            return m_state;
+        }
         //设置当前协程
         static void setThis(Fiber *fiber);
         //获取当前协程
