@@ -32,7 +32,8 @@ namespace zhao
         {
             m_use_caller_threadId = -1;
         }
-        m_threads.resize(thread_num);
+        
+        
         m_thread_num = thread_num;
     }
     FiberScheduler::~FiberScheduler()
@@ -45,6 +46,7 @@ namespace zhao
     }
     void FiberScheduler::start(void)
     {
+        dbg_info << "FiberScheduler::start";    
         Mutex::MutexLockGuardType lock(m_mutex);
         if (!m_stopping)
         {
@@ -52,14 +54,18 @@ namespace zhao
         }
         m_stopping = false;
         ASSERT(m_threads.empty());
+        //m_threads.resize(m_thread_num);
         for (uint32_t i = 0; i < m_thread_num; ++i)
         {
             m_threads.push_back(std::shared_ptr<Thread>(new Thread(std::bind(&FiberScheduler::run, this), m_name + "_" + std::to_string(i), nullptr)));
             m_threadIds.push_back(m_threads[i]->getTid());
         }
+
+        
     }
     void FiberScheduler::stop(void)
     {
+        dbg_info << "FiberScheduler::stop";
         // ASSERT(m_use_caller_threadId != -1);
         if (m_use_caller_threadId == -1)
         {
@@ -86,13 +92,13 @@ namespace zhao
         {
             tickle();
         }
-
+        
         if (mp_use_caller_fiber)
         {
             tickle();
             if (!stopping())
             {
-                mp_use_caller_fiber->call(); // 唤醒主协程，让他收尾
+                mp_use_caller_fiber->call(); // 如果在start中执行，主线程会一直运行run，主线程没有执行stop的机会
             }
         }
         std::vector<Thread::Ptr> tempThreads;
@@ -121,6 +127,7 @@ namespace zhao
     }
     void FiberScheduler::tickle()
     {
+        dbg_info << "FiberScheduler::tickle";
     }
     bool FiberScheduler::stopping()
     {
@@ -129,9 +136,14 @@ namespace zhao
     }
     void FiberScheduler::idle()
     {
+        dbg_info << "FiberScheduler::idle";
+        // while(!stopping()){
+        //     Fiber::yieldToHold();
+        // }
     }
     void FiberScheduler::run()
     {
+        dbg_info << "FiberScheduler::run";
         setThis(this);
         if (getThreadId() != m_use_caller_threadId)
         {
@@ -145,12 +157,13 @@ namespace zhao
         {
             fd.reset();
             bool tickle_other = false;
+            bool activated = false;
             {
                 Mutex::MutexLockGuardType lock(m_mutex);
                 auto it = m_fibers.begin();
                 while (it != m_fibers.end())
                 {
-                    if (it->m_threadId == -1 && it->m_threadId != Thread::getCur()->getTid())
+                    if (it->m_threadId != -1 && it->m_threadId != Thread::getCur()->getTid())
                     {
                         tickle_other = true;
                         ++it;
@@ -165,6 +178,8 @@ namespace zhao
 
                     fd = *it;
                     m_fibers.erase(it);
+                    ++m_activated_thread_num;
+                    activated = true;
                     break;
                 }
             }
@@ -174,7 +189,7 @@ namespace zhao
             }
             if (fd.m_fiber && (fd.m_fiber->getState() != Fiber::State::TERM || fd.m_fiber->getState() != Fiber::State::ERROR))
             {
-                ++m_activated_thread_num;
+                
                 fd.m_fiber->swapIn();
                 --m_activated_thread_num;
                 if (fd.m_fiber->getState() == Fiber::State::READY)
@@ -197,7 +212,7 @@ namespace zhao
                 {
                     cb_fiber.reset(new Fiber(fd.m_cb));
                 }
-                ++m_activated_thread_num;
+                fd.reset();
                 cb_fiber->swapIn();
                 --m_activated_thread_num;
                 if (cb_fiber->getState() == Fiber::State::READY)
@@ -214,10 +229,14 @@ namespace zhao
                     ASSERT(cb_fiber->getState() == Fiber::State::HOLD);
                     cb_fiber.reset();
                 }
-                fd.reset();
+                
             }
             else
             {
+                if(activated){
+                    --m_activated_thread_num;
+                    continue;
+                }
                 // 没有任务执行，去执行idle
                 if (idle_fiber->getState() == Fiber::State::TERM || idle_fiber->getState() == Fiber::State::ERROR)
                 {

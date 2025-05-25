@@ -210,7 +210,7 @@ namespace zhao
 
         virtual void log(LogLevel::Level level, LogEvent::Ptr event) = 0;
         virtual std::string toYamlString(void) = 0;
-        void setFormatter(LogFormatter::Ptr formatter) { Mutex::MutexLockGuardType guard(m_mutex);m_formatter = formatter; }
+        void setFormatter(LogFormatter::Ptr formatter) { m_formatter = formatter; }
         void setLevel(LogLevel::Level level) { m_level = level; }
         LogFormatter::Ptr getFormatter(void) { return m_formatter; }
         Mutex& getMutex() { return m_mutex; }

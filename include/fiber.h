@@ -30,6 +30,7 @@ namespace zhao
         //将当前子协程切换到后台，主协程执行
         void swapOut();
         void  call();
+        void back();
         //获取当前协程id
         uint64_t getId();
         State getState() const{
@@ -50,6 +51,7 @@ namespace zhao
         Fiber();
         //所有子协程的入口
         static void entry(void);
+        static void call_entry(void);
         uint64_t  m_id = 0 ;
         uint64_t  m_stackSize = 0;
         State m_state = INIT;

@@ -49,7 +49,7 @@ namespace zhao
             }
         }
     private:
-        T m_mutex;
+        T &m_mutex;
         
         bool m_locked;
     };
@@ -130,7 +130,7 @@ namespace zhao
             }
         }
     private:
-        T m_mutex;
+        T& m_mutex;
         bool m_locked;
     };
     template<class T>
@@ -159,7 +159,7 @@ namespace zhao
             }
         }
     private:
-        T m_mutex;
+        T& m_mutex;
         bool m_locked;
     };
     class RWMutex

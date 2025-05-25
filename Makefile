@@ -19,7 +19,7 @@ SRC		:= src
 INCLUDE	:= include
 
 # define lib directory
-LIB		:= lib
+LIB		:= 
 
 ifeq ($(OS),Windows_NT)
 MAIN	:= main.exe

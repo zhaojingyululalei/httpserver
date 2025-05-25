@@ -1,10 +1,12 @@
 #include "fiber.h"
 #include "log.h"
 #include "config.h"
+#include "fiberscheduler.h"
 #include <atomic>
 namespace zhao
 {
     static Logger::Ptr g_logger = GET_LOGGER("system");
+#define ASSERT(x) ZHAO_LOG_ASSERT(x)
 #define dbg ZHAO_LOG_DEBUG(g_logger)
     static std::atomic<uint64_t> sg_fiber_id = 0;
     static std::atomic<uint64_t> sg_fiber_count = 0;
@@ -26,21 +28,17 @@ namespace zhao
         sg_fiber_count++;
         m_stackSize = stack_size ? stack_size : g_fiber_stack_size->getvalue();
         m_stack = malloc(m_stackSize);
+        // 常规独立栈分配
+        getcontext(&m_ctx);
+        m_ctx.uc_link = nullptr;
+        m_ctx.uc_stack.ss_sp = m_stack;
+        m_ctx.uc_stack.ss_size = m_stackSize;
         if (use_caller)
         {
-            // 直接捕获当前上下文作为起点
-            getcontext(&m_ctx);
-            m_ctx.uc_stack.ss_sp = nullptr; // 标记使用调用者栈
-            m_ctx.uc_stack.ss_size = 0;
-            makecontext(&m_ctx, cb.target<void()>(), 0);
+            makecontext(&m_ctx, Fiber::call_entry, 0);
         }
         else
         {
-            // 常规独立栈分配
-            getcontext(&m_ctx);
-            m_ctx.uc_link = nullptr;
-            m_ctx.uc_stack.ss_sp = m_stack;
-            m_ctx.uc_stack.ss_size = m_stackSize;
             makecontext(&m_ctx, Fiber::entry, 0);
         }
     }
@@ -78,30 +76,42 @@ namespace zhao
         makecontext(&m_ctx, Fiber::entry, 0);
         m_state = INIT;
     }
-    // 子协程进去执行
+    /**该函数是从主携程切换到子携程，但是主携程不一定是随线程创建的那个主携程 */
     void Fiber::swapIn()
     {
         int ret;
         ZHAO_LOG_ASSERT(m_state != EXEC);
         setThis(this);
         m_state = EXEC;
-        ret = swapcontext(&stp_main_fiber->m_ctx, &m_ctx);
+        // ret = swapcontext(&stp_main_fiber->m_ctx, &m_ctx);
+        ret = swapcontext(&FiberScheduler::getMainFiber()->m_ctx, &m_ctx);
+        ASSERT(ret == 0);
     }
     // 子协程退出不执行
     void Fiber::swapOut()
     {
-        setThis(stp_main_fiber.get());
-        if (swapcontext(&m_ctx, &st_cur_fiber->m_ctx) != 0)
+        // setThis(stp_main_fiber.get());
+        setThis(FiberScheduler::getMainFiber());
+        if (swapcontext(&m_ctx, &FiberScheduler::getMainFiber()->m_ctx) != 0)
         {
             dbg << "swapcontext error";
         }
     }
+    /**该函数是从当前线程的主携程切换到子携程 */
     void Fiber::call()
     {
         setThis(this);
         m_state = EXEC;
+        // 对于user_caller来说 主携程是随线程创建的携程
+        // 对于非user_caller，在fiberscheduler 中是mp_use_caller_fiber
         swapcontext(&stp_main_fiber->m_ctx, &m_ctx);
-        
+    }
+    void Fiber::back()
+    {
+        int ret;
+        setThis(stp_main_fiber.get());
+        ret = swapcontext(&m_ctx, &stp_main_fiber->m_ctx);
+        ASSERT(ret == 0);
     }
     uint64_t Fiber::getId()
     {
@@ -159,6 +169,27 @@ namespace zhao
         auto raw_ptr = cur.get();
         cur.reset();
         raw_ptr->swapOut(); // 子协程处理完毕返回主协程
+        ZHAO_LOG_ASSERT(false);
+    }
+
+    void Fiber::call_entry(void)
+    {
+        Fiber::Ptr cur = Fiber::getThis();
+        ZHAO_LOG_ASSERT(cur);
+        try
+        {
+            cur->m_cb();
+            cur->m_cb = nullptr;
+            cur->m_state = TERM;
+        }
+        catch (std::exception &e)
+        {
+            cur->m_state = ERROR;
+            ZHAO_LOG_ERROR(GET_ROOT_LOGGER()) << "Fiber Except:" << e.what() << " fiber id = " << cur->getId();
+        }
+        auto raw_ptr = cur.get();
+        cur.reset();
+        raw_ptr->back(); // 子协程处理完毕返回主协程
         ZHAO_LOG_ASSERT(false);
     }
 
