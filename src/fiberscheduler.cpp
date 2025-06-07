@@ -8,7 +8,7 @@ namespace zhao
 #define dbg_info ZHAO_LOG_INFO(g_logger)
 #define dbg_warn ZHAO_LOG_WARN(g_logger)
 #define ASSERT(x) ZHAO_LOG_ASSERT(x)
-    static thread_local FiberScheduler *st_fiber_scheduler = nullptr; // 每个线程都有一个调度器
+    static thread_local FiberScheduler *st_fiber_scheduler = nullptr; // 仅仅主线程持有调度器
     static thread_local Fiber *st_mainfiber = nullptr;                // 每个线程都有一个负责调度的协程
     FiberScheduler::FiberScheduler(uint32_t thread_num, bool use_caller, const std::string &name)
         : m_name(name), m_thread_num(thread_num)
@@ -32,8 +32,7 @@ namespace zhao
         {
             m_use_caller_threadId = -1;
         }
-        
-        
+
         m_thread_num = thread_num;
     }
     FiberScheduler::~FiberScheduler()
@@ -46,7 +45,7 @@ namespace zhao
     }
     void FiberScheduler::start(void)
     {
-        dbg_info << "FiberScheduler::start";    
+        dbg_info << "FiberScheduler::start";
         Mutex::MutexLockGuardType lock(m_mutex);
         if (!m_stopping)
         {
@@ -54,14 +53,12 @@ namespace zhao
         }
         m_stopping = false;
         ASSERT(m_threads.empty());
-        //m_threads.resize(m_thread_num);
+        // m_threads.resize(m_thread_num);
         for (uint32_t i = 0; i < m_thread_num; ++i)
         {
             m_threads.push_back(std::shared_ptr<Thread>(new Thread(std::bind(&FiberScheduler::run, this), m_name + "_" + std::to_string(i), nullptr)));
             m_threadIds.push_back(m_threads[i]->getTid());
         }
-
-        
     }
     void FiberScheduler::stop(void)
     {
@@ -92,7 +89,7 @@ namespace zhao
         {
             tickle();
         }
-        
+
         if (mp_use_caller_fiber)
         {
             tickle();
@@ -136,10 +133,11 @@ namespace zhao
     }
     void FiberScheduler::idle()
     {
-        dbg_info << "FiberScheduler::idle";
-        // while(!stopping()){
-        //     Fiber::yieldToHold();
-        // }
+        //dbg_info << "FiberScheduler::idle";
+        while (!stopping())
+        {
+            Fiber::yieldToHold();
+        }
     }
     void FiberScheduler::run()
     {
@@ -160,27 +158,31 @@ namespace zhao
             bool activated = false;
             {
                 Mutex::MutexLockGuardType lock(m_mutex);
-                auto it = m_fibers.begin();
-                while (it != m_fibers.end())
+                if (!m_fibers.empty())
                 {
-                    if (it->m_threadId != -1 && it->m_threadId != Thread::getCur()->getTid())
+                    auto it = m_fibers.begin();
+                    while (it != m_fibers.end())
                     {
-                        tickle_other = true;
-                        ++it;
-                        continue;
-                    }
-                    ASSERT(it->m_cb || it->m_fiber);
-                    if (it->m_fiber && it->m_fiber->getState() == Fiber::State::EXEC)
-                    {
-                        ++it;
-                        continue;
-                    }
+                        if (it->m_threadId != -1 && it->m_threadId != Thread::getCur()->getTid())
+                        {
+                            tickle_other = true;
+                            ++it;
+                            continue;
+                        }
+                        ASSERT(it->m_cb || it->m_fiber);
+                        if (it->m_fiber && it->m_fiber->getState() == Fiber::State::EXEC)
+                        {
+                            ++it;
+                            continue;
+                        }
 
-                    fd = *it;
-                    m_fibers.erase(it);
-                    ++m_activated_thread_num;
-                    activated = true;
-                    break;
+                        fd = *it;
+                        m_fibers.erase(it++);
+                        ++m_activated_thread_num;
+                        activated = true;
+                        break;
+                    }
+                    tickle_other |= (it  != m_fibers.end());
                 }
             }
             if (tickle_other)
@@ -189,7 +191,7 @@ namespace zhao
             }
             if (fd.m_fiber && (fd.m_fiber->getState() != Fiber::State::TERM || fd.m_fiber->getState() != Fiber::State::ERROR))
             {
-                
+
                 fd.m_fiber->swapIn();
                 --m_activated_thread_num;
                 if (fd.m_fiber->getState() == Fiber::State::READY)
@@ -229,11 +231,11 @@ namespace zhao
                     ASSERT(cb_fiber->getState() == Fiber::State::HOLD);
                     cb_fiber.reset();
                 }
-                
             }
             else
             {
-                if(activated){
+                if (activated)
+                {
                     --m_activated_thread_num;
                     continue;
                 }
@@ -247,9 +249,8 @@ namespace zhao
                 --m_idle_thread_num;
                 if (idle_fiber->getState() != Fiber::TERM && idle_fiber->getState() != Fiber::ERROR)
                 {
-                    ASSERT(idle_fiber->getState() == Fiber::READY|| idle_fiber->getState() == Fiber::HOLD);
+                   idle_fiber->setState(Fiber::HOLD);
                 }
-
             }
         }
     }

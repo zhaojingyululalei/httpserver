@@ -1,7 +1,7 @@
 #include "fiber.h"
 #include "log.h"
 #define dbg ZHAO_LOG_DEBUG(GET_ROOT_LOGGER())
-void fiber_test_func(){
+static void fiber_test_func(){
     dbg<<"fiber_one";
     zhao::Fiber::yieldToHold();//切到主协程
     dbg<<"fiber_two";

@@ -36,6 +36,9 @@ namespace zhao
         State getState() const{
             return m_state;
         }
+        void setState(State state){
+            m_state = state;
+        }
         //设置当前协程
         static void setThis(Fiber *fiber);
         //获取当前协程

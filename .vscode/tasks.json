@@ -19,7 +19,9 @@
                 "command": "bash",
                 "args": [
                     "-c",
-                    "make"
+                    "make",
+                    "-j",
+                    "16"
                 ]
             },
             "osx": {

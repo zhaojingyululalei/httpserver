@@ -23,8 +23,9 @@ static void test01(void)
     zhao::FiberScheduler sched(10,false,"test01_sche");
     sched.start();
     sched.join(a_fiber_func);
-    sleep(10);
+    sleep(15);
     sched.stop();
+    dbg<<"test01_sche stop";
 }
 void fiberscheduler_test(void)
 {

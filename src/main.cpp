@@ -8,6 +8,7 @@ extern void config_test(void);
 extern void thread_test(void);
 extern void fiber_test(void);
 extern void fiberscheduler_test(void);
+extern void ioscheduler_test(void);
 void load_config(void)
 {
     YAML::Node root = YAML::LoadFile("config/config.yaml");
@@ -20,6 +21,7 @@ int main()
     //config_test();
     //thread_test();
     //fiber_test();
-    fiberscheduler_test();
+    //fiberscheduler_test();
+    ioscheduler_test();
     return 0;
 }
