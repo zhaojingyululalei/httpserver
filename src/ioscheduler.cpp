@@ -277,7 +277,8 @@ namespace zhao
 
         while (true)
         {
-            if (stopping())
+            uint64_t next_timeout = 0;
+            if (stopping(next_timeout)) // 在stopping中，会获取到距离下一个earlist定时器的时间
             {
                 dbg_info << "IOScheduler::idle stopping";
                 break;
@@ -285,8 +286,18 @@ namespace zhao
             int ret;
             do
             {
+                if (next_timeout != ~0ull)
+                {
+                    next_timeout = (int)next_timeout > EPOLL_TIMEOUT
+                                       ? EPOLL_TIMEOUT
+                                       : next_timeout;
+                }
+                else
+                {
+                    next_timeout = EPOLL_TIMEOUT;
+                }
                 // 等待接收事件
-                ret = epoll_wait(m_epfd, epevents, EVENTS_LIMITS, EPOLL_TIMEOUT);
+                ret = epoll_wait(m_epfd, epevents, EVENTS_LIMITS, (int)next_timeout);
                 if (ret <= 0 && errno == EINTR)
                 {
                 }
@@ -295,6 +306,16 @@ namespace zhao
                     break;
                 }
             } while (true);
+
+            // 处理定时器到期事件
+            std::vector<std::function<void()>> cbs;
+            collectExpiredCb(cbs);
+            if (!cbs.empty())
+            {
+
+                join(cbs.begin(), cbs.end());
+                cbs.clear();
+            }
             // 处理接收到的事件
             for (int i = 0; i < ret; i++)
             {
@@ -305,13 +326,15 @@ namespace zhao
                     uint8_t dummy;
                     while (read(m_pipefd[0], &dummy, 1) == 1)
                         ; // EPOLL_ET模式，需要读干净
+                    continue;
                 }
                 // 其他事件
                 FdEvent *fd_evt = (FdEvent *)event.data.ptr;
                 Mutex::MutexLockGuardType lock(fd_evt->mutex);
                 if (event.events & (EPOLLERR | EPOLLHUP))
                 {
-                    event.events |= (EPOLLIN | EPOLLOUT)& fd_evt->events;;
+                    event.events |= (EPOLLIN | EPOLLOUT) & fd_evt->events;
+                    ;
                 }
                 // epoll_wait返回的事件是动态的，什么发生了是什么事件，因此和注册时不同，需要获取和判断
                 int tmp_events = NONE;
@@ -353,18 +376,30 @@ namespace zhao
                     --m_pendingEventCount;
                 }
             }
-            //swapOut走，但没有离开作用于，因此cur.reset手动将share_ptr计数-1
+            // swapOut走，但没有离开作用于，因此cur.reset手动将share_ptr计数-1
             Fiber::Ptr cur = Fiber::getThis();
-            
+
             auto raw_ptr = cur.get();
             cur.reset();
 
-            raw_ptr->swapOut();//切回主协程调度其他协程
+            raw_ptr->swapOut(); // 切回主协程调度其他协程
         }
     }
     bool IOScheduler::stopping()
     {
-        return FiberScheduler::stopping() && m_pendingEventCount == 0;
+        uint64_t timeout = 0;
+        return stopping(timeout);
+    }
+
+    void IOScheduler::onTimerInsertedAtFront()
+    {
+        tickle();
+    }
+
+    bool IOScheduler::stopping(uint64_t &timeout)
+    {
+        timeout = getEarliestTimer();
+        return timeout == ~0ull && m_pendingEventCount == 0 && FiberScheduler::stopping();
     }
 
 } // namespace zhao

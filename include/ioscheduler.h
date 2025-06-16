@@ -3,10 +3,11 @@
 #include "fiberscheduler.h"
 #include "ipc.h"
 #include <memory>
+#include "timer.h"
 namespace zhao
 {
 
-    class IOScheduler : public FiberScheduler
+    class IOScheduler : public FiberScheduler,public TimerScheduler
     {
     public:
         typedef std::shared_ptr<IOScheduler> ptr;
@@ -55,6 +56,8 @@ namespace zhao
         void tickle() override;
         void idle() override;
         bool stopping() override;
+        void onTimerInsertedAtFront() override;
+        bool stopping(uint64_t& timeout);
     private:
         int m_epfd = -1;
         int m_pipefd[2];

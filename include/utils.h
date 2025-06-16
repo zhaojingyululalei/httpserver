@@ -18,6 +18,7 @@ namespace zhao
     std::string getThreadName();
     void backtrace(std::vector  <std::string> &bt, int size = 64, int skip = 1);
     std::string backtraceToString(int size = 64, int skip = 1);
+    uint64_t getCurrentMS();
 } // namespace zhao
 
 #endif

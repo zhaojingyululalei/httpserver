@@ -53,7 +53,7 @@ namespace zhao
                     need_tickle = true;
                 }
                 for(;begin != end;begin++){
-                    FiberDefine fd(&*begin,threadId);//用的是swap
+                    FiberDefine fd(*begin,threadId);//用的是swap
                     m_fibers.push_back(fd);
                 }
             }

@@ -24,11 +24,17 @@ namespace zhao
     {
         return syscall(SYS_gettid);
     }
-
+    uint64_t getCurrentMS()
+    {
+        struct timeval tv;
+        gettimeofday(&tv, NULL);
+        return tv.tv_sec * 1000ul + tv.tv_usec / 1000;
+    }
     fid_t getFiberId()
     {
         Fiber::Ptr cur = Fiber::getThis();
-        if(cur){
+        if (cur)
+        {
             return cur->getId();
         }
         return 0;
@@ -77,7 +83,9 @@ namespace zhao
                 bt.push_back(symbols[i]);
             }
             free(symbols);
-        }else{
+        }
+        else
+        {
             ZHAO_LOG_FATAL(system_log) << "backtrace_symbols error";
         }
 
