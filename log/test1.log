@@ -1150,3 +1150,44 @@
 2025-06-16 13:08:26	one child fiber destroyed
 2025-06-16 13:08:26	one child fiber destroyed
 2025-06-16 13:08:26	one main fiber destroyed
+2025-07-04 09:19:40	FiberScheduler::start
+2025-07-04 09:19:40	FiberScheduler::stop
+2025-07-04 09:19:40	FiberScheduler::run
+2025-07-04 09:19:45	IOScheduler::idle
+2025-07-04 09:19:45	IOScheduler::idle stopping
+2025-07-04 09:19:45	one child fiber destroyed
+2025-07-04 09:19:45	one child fiber destroyed
+2025-07-04 09:19:45	one child fiber destroyed
+2025-07-04 09:19:45	one main fiber destroyed
+2025-07-04 09:28:04	FiberScheduler::start
+2025-07-04 09:28:04	FiberScheduler::stop
+2025-07-04 09:28:04	FiberScheduler::run
+2025-07-04 09:28:04	IOScheduler::idle
+2025-07-04 09:28:06	one child fiber destroyed
+2025-07-04 09:28:07	one child fiber destroyed
+2025-07-04 09:28:07	IOScheduler::idle stopping
+2025-07-04 09:28:07	one child fiber destroyed
+2025-07-04 09:28:07	one child fiber destroyed
+2025-07-04 09:28:07	one child fiber destroyed
+2025-07-04 09:28:07	one main fiber destroyed
+2025-07-04 20:38:36	one main fiber destroyed
+2025-07-04 20:42:02	FiberScheduler::start
+2025-07-04 20:42:02	FiberScheduler::stop
+2025-07-04 20:42:02	FiberScheduler::run
+2025-07-04 20:42:02	IOScheduler::idle
+2025-07-04 20:42:07	one child fiber destroyed
+2025-07-04 20:42:07	IOScheduler::idle stopping
+2025-07-04 20:42:07	one child fiber destroyed
+2025-07-04 20:42:07	one child fiber destroyed
+2025-07-04 20:42:07	one child fiber destroyed
+2025-07-04 20:42:07	one main fiber destroyed
+2025-07-04 20:45:55	FiberScheduler::start
+2025-07-04 20:45:55	FiberScheduler::stop
+2025-07-04 20:45:55	FiberScheduler::run
+2025-07-04 20:45:55	IOScheduler::idle
+2025-07-04 20:46:00	one child fiber destroyed
+2025-07-04 20:46:00	IOScheduler::idle stopping
+2025-07-04 20:46:00	one child fiber destroyed
+2025-07-04 20:46:00	one child fiber destroyed
+2025-07-04 20:46:00	one child fiber destroyed
+2025-07-04 20:46:00	one main fiber destroyed

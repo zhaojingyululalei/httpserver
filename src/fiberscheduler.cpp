@@ -1,6 +1,7 @@
 #include "fiberscheduler.h"
 #include "log.h"
 #include "utils.h"
+#include "hook.h"
 namespace zhao
 {
     static Logger::Ptr g_logger = GET_LOGGER("system");
@@ -142,6 +143,7 @@ namespace zhao
     void FiberScheduler::run()
     {
         dbg_info << "FiberScheduler::run";
+        setHookEnable(true);
         setThis(this);
         if (getThreadId() != m_use_caller_threadId)
         {
