@@ -214,7 +214,7 @@ extern "C"
 
         // 获取当前协程和调度器
         zhao::Fiber::Ptr cur_fiber = zhao::Fiber::getThis();
-        zhao::IOScheduler *iosche = zhao::IOScheduler::getThis();
+        zhao::IOScheduler *iosche = zhao::IOScheduler::getThis();//没有就创建调度器
 
         // 使用定时器，在 usec 微秒后将协程重新加入调度器
         iosche->addTimer(

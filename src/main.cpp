@@ -11,6 +11,8 @@ extern void fiberscheduler_test(void);
 extern void ioscheduler_test(void);
 extern void timerscheduler_test(void);
 extern void hook_test(void);
+extern void address_test(void);
+extern void socket_test(void);
 void load_config(void)
 {
     YAML::Node root = YAML::LoadFile("config/config.yaml");
@@ -26,6 +28,8 @@ int main()
     //fiberscheduler_test();
     //ioscheduler_test();
     //timerscheduler_test();
-    hook_test();
+    //hook_test();
+    //address_test();
+    socket_test();
     return 0;
 }

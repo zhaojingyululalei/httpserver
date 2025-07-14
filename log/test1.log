@@ -1191,3 +1191,16 @@
 2025-07-04 20:46:00	one child fiber destroyed
 2025-07-04 20:46:00	one child fiber destroyed
 2025-07-04 20:46:00	one main fiber destroyed
+2025-07-14 11:25:35	one main fiber destroyed
+2025-07-14 11:26:52	one main fiber destroyed
+2025-07-14 11:28:40	one main fiber destroyed
+2025-07-14 11:29:24	one main fiber destroyed
+2025-07-14 23:17:14	FiberScheduler::start
+2025-07-14 23:17:14	FiberScheduler::stop
+2025-07-14 23:17:14	FiberScheduler::run
+2025-07-14 23:17:14	IOScheduler::idle
+2025-07-14 23:17:14	one child fiber destroyed
+2025-07-14 23:17:14	IOScheduler::idle stopping
+2025-07-14 23:17:14	one child fiber destroyed
+2025-07-14 23:17:14	one child fiber destroyed
+2025-07-14 23:17:14	one main fiber destroyed
