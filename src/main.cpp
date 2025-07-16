@@ -13,11 +13,13 @@ extern void timerscheduler_test(void);
 extern void hook_test(void);
 extern void address_test(void);
 extern void socket_test(void);
+extern void http_test(void);
 void load_config(void)
 {
     YAML::Node root = YAML::LoadFile("config/config.yaml");
     zhao::Config::loadYamlToConfig(root);
 }
+
 int main()
 {
     load_config();
@@ -30,6 +32,7 @@ int main()
     //timerscheduler_test();
     //hook_test();
     //address_test();
-    socket_test();
+    //socket_test();
+    http_test();
     return 0;
 }

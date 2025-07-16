@@ -1,9 +1,9 @@
 # define the Cpp compiler to use
 CXX = g++
-
+#CC = gcc
 # define any compile-time flags
 CXXFLAGS	:= -std=c++17 -Wall -Wextra -g
-
+CFLAGS	:= -std=c11 -Wall -Wextra -g
 # define library paths in addition to /usr/lib
 LFLAGS = -lpthread -lyaml-cpp
 
@@ -20,6 +20,10 @@ INCLUDE	:= include
 
 # define lib directory
 LIB		:= 
+
+# Ragel 支持
+RLSOURCES	:= $(shell find $(INCLUDE) -name '*.rl')
+RL2C		:= $(patsubst $(INCLUDE)/%.rl,$(BUILD)/%.c, $(RLSOURCES))
 
 ifeq ($(OS),Windows_NT)
 MAIN	:= main.exe
@@ -49,8 +53,12 @@ LIBS		:= $(patsubst %,-L%, $(LIBDIRS:%/=%))
 SOURCES		:= $(shell find $(SRC) -name '*.cpp')
 
 # define the C object files
-OBJECTS		:= $(patsubst $(SRC)/%.cpp,$(BUILD)/%.o, $(SOURCES))
-
+#OBJECTS		:= $(patsubst $(SRC)/%.cpp,$(BUILD)/%.o, $(SOURCES))
+OBJECTS		:= $(patsubst $(SRC)/%.cpp,$(BUILD)/%.o, $(SOURCES)) $(RL2C:.c=.o)
+#ragel
+$(BUILD)/%.c: $(INCLUDE)/%.rl
+	@$(MD) $(dir $@)
+	ragel -C -I./$(INCLUDE)/http $< -o $@
 # define the dependency output files
 DEPS		:= $(OBJECTS:.o=.d)
 
@@ -69,7 +77,7 @@ $(OUTPUT) $(BUILD):
 	$(MD) $@
 
 $(MAIN): $(OBJECTS)
-	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $(OUTPUTMAIN) $(OBJECTS) $(LFLAGS) $(LIBS)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $(OUTPUTMAIN) $^ $(LFLAGS) $(LIBS)
 
 # include all .d files
 -include $(DEPS)
@@ -78,6 +86,9 @@ $(MAIN): $(OBJECTS)
 $(BUILD)/%.o: $(SRC)/%.cpp
 	@$(MD) $(dir $@)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c -MMD $<  -o $@
+%.o: %.c
+	@$(MD) $(dir $@)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -c -MMD $< -o $@
 
 .PHONY: clean
 clean:

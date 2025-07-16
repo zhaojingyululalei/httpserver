@@ -63,6 +63,14 @@
         "cinttypes": "cpp",
         "unordered_set": "cpp",
         "executor": "cpp",
-        "future": "cpp"
+        "future": "cpp",
+        "condition_variable": "cpp",
+        "forward_list": "cpp",
+        "buffer": "cpp",
+        "io_context": "cpp",
+        "netfwd": "cpp",
+        "socket": "cpp",
+        "timer": "cpp",
+        "mutex": "cpp"
     }
 }
