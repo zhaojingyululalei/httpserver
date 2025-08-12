@@ -1,0 +1,2 @@
+fiber:
+  stacksize: 128*1024

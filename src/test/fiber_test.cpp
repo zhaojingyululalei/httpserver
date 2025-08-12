@@ -1,24 +1,32 @@
-#include "fiber.h"
-#include "log.h"
-#define dbg ZHAO_LOG_DEBUG(GET_ROOT_LOGGER())
-static void fiber_test_func(){
-    dbg<<"fiber_one";
-    zhao::Fiber::yieldToHold();//切到主协程
-    dbg<<"fiber_two";
-    zhao::Fiber::yieldToHold();//切到主协程
+#include "fiber/fiber.hpp"
+#include "log/logger.hpp"
 
+#define MODULE_NAME "fiber_test"
+#define dbg MODULE_DEBUG(MODULE_NAME, LOGGER_GET("root"))
+#define warn MODULE_WARN(MODULE_NAME, LOGGER_GET("root"))
+#define error MODULE_ERROR(MODULE_NAME, LOGGER_GET("root"))
+static void run_in_fiber()
+{
+    dbg<< "run in fiber start";
+    zhao::Fiber::getThis()->yieldToHold();
+    dbg<<"run in fiber continue.....";
+}
+
+static void test_fiber()
+{
+    dbg << "start test";
+    {
+        zhao::Fiber::ptr fiber(new zhao::Fiber(run_in_fiber));
+        fiber->swapIn();
+        dbg<<"test fiber continue...";
+        fiber->swapIn();
+        dbg <<"test end";
+    }
+    dbg << "test end 2";
 }
 static void test01()
 {
-    zhao::Fiber::getThis();//创建主协程
-    dbg<<"main begin";
-    zhao::Fiber::Ptr fiber(new zhao::Fiber(fiber_test_func));//创建子协程
-    fiber->swapIn();//切换到子协程
-    dbg << "main after  swapIn__1";
-    fiber->swapIn();
-    dbg << "main after  swapIn__2";
-    fiber->swapIn();
-    dbg  << "main end";
+    test_fiber();
 }
 void fiber_test()
 {

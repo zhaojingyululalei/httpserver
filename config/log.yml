@@ -1,0 +1,25 @@
+logs:
+    - name: root
+      formatter: time:%d||logger:[%c]||module:[%M]||dbg:[%p]||tid:%t||threadname:%N||fiberid:%F||file:[%f]||line:%l||content:{%n%m%n}
+      module:
+        mask: 
+          - "zhao"
+        #   - "world"
+        # mask_exclude:
+        #   - "zhao"
+      appenders:
+          - type: FileConsole
+            file: log/root.txt
+          - type: StdoutConsole
+    - name: system
+      formatter: time:%d||logger:[%c]||module:[%M]||dbg:[%p]||tid:%t||threadname:%N||fiberid:%F||file:[%f]||line:%l||content:{%n%m%n}
+      module:
+        # mask: 
+        #   - "test"
+        # mask_exclude:
+        #   - "world"
+      appenders:
+          - type: FileConsole
+            file: log/system.txt
+          - type: StdoutConsole
+

@@ -1,8 +1,0 @@
-log_test:
-  - name: "logger2"
-    level: "WARN"
-    formatter: "%d%T%m%n"
-    appenders:
-      - type: "FileLogAppender"
-        file: "log/test2.log"
-      - type: "ConsoleLogAppender"

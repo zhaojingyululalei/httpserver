@@ -1,290 +1,240 @@
-#include "config.h"
+#include "config/configvar.hpp"
 
-#include "log.h"
-#include <yaml-cpp/yaml.h>
-#include <vector>
-static void test1(void)
-{
-
-    zhao::Config::lookup("myKey", std::string("hello"), "desc");
-    auto cfg = zhao::Config::find<std::string>("myKey");
-    ZHAO_LOG_FMT_INFO(GET_ROOT_LOGGER(), "myKey = %s", cfg->toString().c_str());
-}
-static void test2(void)
-{
-    YAML::Node config = YAML::LoadFile("config/config.yaml");
-
-    std::string name = config["name"].as<std::string>();
-    int age = config["age"].as<int>();
-    bool debug = config["debug"].as<bool>();
-
-    std::cout << "Name: " << name << "\n";
-    std::cout << "Age: " << age << "\n";
-    std::cout << "Debug: " << (debug ? "true" : "false") << "\n";
-}
-
-#include <vector>
 #include <string>
-
-struct Appender
+#include <iostream>
+static void test01(void)
 {
-    std::string type;
-    std::string dest;
-};
+    // 获取配置管理器实例
+    zhao::Config* configMgr = zhao::ConfigMgr::getInstance();
 
-struct LoggerConfig
-{
-    std::string name;
-    std::string level;
-    std::string formatter;
-    std::vector<Appender> appenders;
-};
+    // 添加配置项
+    auto portConfig = configMgr->add<int>("server.port", 8080, "服务器端口");
+    auto nameConfig = configMgr->add<std::string>("server.name", "MyServer", "服务器名称");
 
-std::vector<LoggerConfig> loadLoggers(const std::string &filename)
-{
-    YAML::Node config = YAML::LoadFile(filename);
-    std::vector<LoggerConfig> loggers;
-
-    for (const auto &node : config["logs"])
+    // 查找配置项
+    auto foundPort = configMgr->lookup<int>("server.port");
+    if (foundPort)
     {
-        LoggerConfig logger;
-        logger.name = node["name"].as<std::string>();
-        logger.level = node["level"].as<std::string>();
-        logger.formatter = node["formatter"].as<std::string>();
-
-        for (const auto &appenderNode : node["appenders"])
-        {
-            Appender appender;
-            appender.type = appenderNode["type"].as<std::string>();
-            if (appender.type == "file")
-            {
-                appender.dest = appenderNode["dest"].as<std::string>();
-            }
-            logger.appenders.push_back(appender);
-        }
-
-        loggers.push_back(logger);
+        std::cout << "Port: " << foundPort->toString() << std::endl;
     }
 
-    return loggers;
-}
-
-static void test3(void)
-{
-    auto loggers = loadLoggers("config/config.yaml");
-
-    for (const auto &logger : loggers)
+    // 如果配置项不存在，lookup会返回nullptr
+    auto notExist = configMgr->lookup<double>("non.existent");
+    if (!notExist)
     {
-        std::cout << "Logger: " << logger.name << "\n";
-        std::cout << "  Level: " << logger.level << "\n";
-        std::cout << "  Formatter: " << logger.formatter << "\n";
-        for (const auto &app : logger.appenders)
-        {
-            std::cout << "  Appender Type: " << app.type;
-            if (!app.dest.empty())
-                std::cout << ", Dest: " << app.dest;
-            std::cout << "\n";
-        }
-        std::cout << "\n";
+        std::cout << "Config not found" << std::endl;
     }
 }
-// static void test4(void)
-// {
-
-// #define XX(type, name, prefix, des) \
-//     zhao::ConfigItem<type>::Ptr cfg##name = zhao::Config::lookup(#prefix "." #name, (type)0, des);
-//     XX(int,port, system, "port number");
-//     XX(float,value, system, "value number");
-//     XX(std::vector<int>,vecs, system, "vecs number");
-//     XX(std::list<int>,list, system, "list number");
-// #undef XX
+static auto g_int_val = zhao::ConfigMgr::getInstance()->add<int>("server.port", 8080, "服务器端口");
+static auto g_float_val = zhao::ConfigMgr::getInstance()->add<float>("server.timeout", 4.2, "服务器超时时间");
+static auto g_string_val = zhao::ConfigMgr::getInstance()->add<std::string>("server.name", "Zhao", "服务器名称");
+static void test02()
+{
     
-//     // zhao::ConfigItem<int>::Ptr cfgint = zhao::Config::lookup("system.port", (int)100, "test");
-//     // zhao::ConfigItem<float>::Ptr cfgfloat = zhao::Config::lookup("system.value", (float)3.1415f, "test");
-//     // zhao::ConfigItem<std::vector<int>>::Ptr cfgvec = zhao::Config::lookup("system.vecs", std::vector<int>{4, 5, 6}, "test");
-//     // zhao::ConfigItem<std::list<int>>::Ptr cfglist = zhao::Config::lookup("system.list", std::list<int>{7, 8, 9}, "test");
-//     // zhao::ConfigItem<std::set<int>>::Ptr cfgs = zhao::Config::lookup("system.set", std::set<int>{10,11,12}, "test");
-//     // zhao::ConfigItem<std::map<int,int>>::Ptr cfgmap = zhao::Config::lookup("system.map", std::map<int,int>{{13,14},{15,16}}, "test");
-//     // zhao::ConfigItem<std::unordered_map<int,int>>::Ptr cfgumap = zhao::Config::lookup("system.umap", std::unordered_map<int,int>{{17,18},{19,20}}, "test");
-//     // zhao::ConfigItem<std::unordered_set<int>>::Ptr cfguset = zhao::Config::lookup("system.uset", std::unordered_set<int>{21,22,23}, "test");
-//     ZHAO_LOG_INFO(GET_ROOT_LOGGER()) << "before:\n" ;
-// #define XX(name)\
-//     ZHAO_LOG_INFO(GET_ROOT_LOGGER()) << "##name" << ":" << cfg##name->toString() << " \n";
-//     XX(port);
-//     XX(value);
-//     XX(vecs);
-//     //XX(list);
-// #undef XX
+    std::cout << "Port: " << g_int_val->toString() << std::endl;
+    std::cout << "Port: " << g_int_val->getValue() << std::endl;
 
-//     YAML::Node root = YAML::LoadFile("config/config.yaml");
-//     zhao::Config::loadYamlToConfig(root);
+}
+static void test03()
+{
+    std::cout << "before:"<<std::endl;
+    std::cout << "Port: " << g_int_val->getValue() << std::endl;
+    std::cout << "timeout: " << g_float_val->getValue() << std::endl;
+    std::cout << "name: " << g_string_val->getValue() << std::endl;
+    YAML::Node root = YAML::LoadFile("config/log.yml");
+    zhao::ConfigMgr::getInstance()->LoadFromYaml(root);
+    std::cout << "after:"<<std::endl;
 
-// #define XX(type,name,prefix) \
-//     cfg##name = zhao::Config::find<type>(#prefix "." #name);
-//     XX(int,port, system);
-//     XX(float,value, system);
-//     XX(std::vector<int>,vecs, system);
-//     ///XX(std::list<int>,list, system);
-// #undef XX
-//     // cfgint = zhao::Config::find<int>("system.port");
-//     // cfgfloat = zhao::Config::find<float>("system.value");
-//     // cfgvec = zhao::Config::find<std::vector<int>>("system.vecs");
-//     // cfglist = zhao::Config::find<std::list<int>>("system.list");
-//     ZHAO_LOG_INFO(GET_ROOT_LOGGER()) << "after:\n" ;
-// #define XX(name)\
-//     ZHAO_LOG_INFO(GET_ROOT_LOGGER()) << "##name" << ":" << cfg##name->toString() << " \n";
-//     XX(port);
-//     XX(value);
-//     XX(vecs);
-//     //XX(list);
-// #undef XX
-// }
+    std::cout << "Port: " << g_int_val->getValue() << std::endl;
+    std::cout << "timeout: " << g_float_val->getValue() << std::endl;
+    std::cout << "name: " << g_string_val->getValue() << std::endl;
 
-class Student{
+}
+/**
+ * @brief 测试偏特化
+ */
+static void test04()
+{
+    // 添加各种类型的配置项
+    auto basic_string = zhao::ConfigMgr::getInstance()->add<std::string>("basic_string", "", "基础字符串测试");
+    auto basic_int = zhao::ConfigMgr::getInstance()->add<int>("basic_int", 0, "基础整数测试");
+    auto basic_double = zhao::ConfigMgr::getInstance()->add<double>("basic_double", 0.0, "基础浮点数测试");
+    auto basic_bool = zhao::ConfigMgr::getInstance()->add<bool>("basic_bool", false, "基础布尔值测试");
+    
+    // vector类型测试
+    auto vector_int = zhao::ConfigMgr::getInstance()->add<std::vector<int>>("vector_int", std::vector<int>{}, "整数向量测试");
+    auto vector_string = zhao::ConfigMgr::getInstance()->add<std::vector<std::string>>("vector_string", std::vector<std::string>{}, "字符串向量测试");
+    auto vector_double = zhao::ConfigMgr::getInstance()->add<std::vector<double>>("vector_double", std::vector<double>{}, "浮点数向量测试");
+    
+    // list类型测试
+    auto list_int = zhao::ConfigMgr::getInstance()->add<std::list<int>>("list_int", std::list<int>{}, "整数列表测试");
+    auto list_string = zhao::ConfigMgr::getInstance()->add<std::list<std::string>>("list_string", std::list<std::string>{}, "字符串列表测试");
+    
+    // set类型测试
+    auto set_int = zhao::ConfigMgr::getInstance()->add<std::set<int>>("set_int", std::set<int>{}, "整数集合测试");
+    auto set_string = zhao::ConfigMgr::getInstance()->add<std::set<std::string>>("set_string", std::set<std::string>{}, "字符串集合测试");
+    
+    // unordered_set类型测试
+    auto unordered_set_int = zhao::ConfigMgr::getInstance()->add<std::unordered_set<int>>("unordered_set_int", std::unordered_set<int>{}, "整数无序集合测试");
+    
+    // map类型测试
+    auto map_string_int = zhao::ConfigMgr::getInstance()->add<std::map<std::string, int>>("map_string_int", std::map<std::string, int>{}, "字符串到整数映射测试");
+    auto map_string_string = zhao::ConfigMgr::getInstance()->add<std::map<std::string, std::string>>("map_string_string", std::map<std::string, std::string>{}, "字符串到字符串映射测试");
+    
+    // unordered_map类型测试
+    auto unordered_map_string_double = zhao::ConfigMgr::getInstance()->add<std::unordered_map<std::string, double>>("unordered_map_string_double", std::unordered_map<std::string, double>{}, "字符串到浮点数无序映射测试");
+    
+    std::cout << "=== 加载YAML前的默认值 ===" << std::endl;
+    std::cout << "basic_string: " << basic_string->getValue() << std::endl;
+    std::cout << "basic_int: " << basic_int->getValue() << std::endl;
+    std::cout << "vector_int size: " << vector_int->getValue().size() << std::endl;
+    std::cout << "map_string_int size: " << map_string_int->getValue().size() << std::endl;
+    
+    // 加载YAML配置文件
+    try {
+        YAML::Node root = YAML::LoadFile("config/test.yml");
+        zhao::ConfigMgr::getInstance()->LoadFromYaml(root);
+        
+        std::cout << "\n=== 加载YAML后的值 ===" << std::endl;
+        std::cout << "basic_string: " << basic_string->getValue() << std::endl;
+        std::cout << "basic_int: " << basic_int->getValue() << std::endl;
+        std::cout << "basic_double: " << basic_double->getValue() << std::endl;
+        std::cout << "basic_bool: " << (basic_bool->getValue() ? "true" : "false") << std::endl;
+        
+        // 测试vector
+        auto vec_int = vector_int->getValue();
+        std::cout << "vector_int: ";
+        for (const auto& val : vec_int) {
+            std::cout << val << " ";
+        }
+        std::cout << std::endl;
+        
+        // 测试map
+        auto m_str_int = map_string_int->getValue();
+        std::cout << "map_string_int: ";
+        for (const auto& pair : m_str_int) {
+            std::cout << "{" << pair.first << ": " << pair.second << "} ";
+        }
+        std::cout << std::endl;
+        
+        // 测试set
+        auto s_int = set_int->getValue();
+        std::cout << "set_int: ";
+        for (const auto& val : s_int) {
+            std::cout << val << " ";
+        }
+        std::cout << std::endl;
+        
+        std::cout << "\n=== 测试完成 ===" << std::endl;
+    }
+    catch (const std::exception& e) {
+        std::cerr << "加载YAML文件时出错: " << e.what() << std::endl;
+    }
+}
+class Person{
 public:
-    int age;
-    std::string name;
-    bool sex;
-    Student()
-    {}
-    Student(int age, std::string name, bool sex)
-        : age(age), name(name), sex(sex)
-    {}
-
+    std::string m_name;
+    int m_age;
+    bool m_sex;
+    Person(){}
+    Person(std::string name, int age, bool sex):m_name(name), m_age(age), m_sex(sex)
+    { 
+    }
+    ~Person()
+    {
+    }
     std::string toString() const
     {
         std::stringstream ss;
-        ss << "age:" << age << " name:" << name << " sex:" << sex;
+        ss << "Person(" << "name=" << m_name << " age=" << m_age << " sex=" << m_sex << ")";
         return ss.str();
     }
-    bool operator==(const Student &other) const
+
+    bool operator==(const Person &rhs) const
     {
-        return age == other.age && name == other.name && sex == other.sex;
+        return m_name == rhs.m_name && m_age == rhs.m_age && m_sex == rhs.m_sex;
     }
 };
-namespace zhao
-{
+namespace zhao { 
+     /*复杂类型拓展 */
     template <>
-    class BaseTypeConverter<std::string,Student>
+    class LexicalCast<std::string, Person>
     {
     public:
-        Student operator()(const std::string &from)
-        { 
-            Student stu;
-            YAML::Node node = YAML::Load(from); //node为数组类型
-            //如果node不是sequence类型，抛出异常
-            if (!node.IsMap())
-                throw std::logic_error("node is not a map");
-            stu.age = node["age"].as<int>();
-            stu.name = node["name"].as<std::string>();
-            stu.sex = node["sex"].as<bool>();
-            return  stu;
+        Person operator()(const std::string &v)
+        {
+            YAML::Node node = YAML::Load(v);
+            Person p;
+            p.m_name = node["name"].as<std::string>();
+            p.m_age = node["age"].as<int>();
+            p.m_sex = node["sex"].as<bool>();
+            return p;
         }
     };
 
     template <>
-    class BaseTypeConverter<Student,std::string>
+    class LexicalCast<Person, std::string>
     {
     public:
-        std::string operator()(const Student &from)
+        std::string operator()(const Person &p)
         {
             YAML::Node node;
-            node["age"] = from.age;
-            node["name"]=from.name;
-            node["sex"] = from.sex;
+            node["name"] = p.m_name;
+            node["age"] = p.m_age;
+            node["sex"] = p.m_sex;
             std::stringstream ss;
-            ss<<node;
+            ss << node;
             return ss.str();
         }
     };
-} // namespace zhao
-
-
-
-#define LOG_CONFIG_VALUE(name) \
-    ZHAO_LOG_INFO(GET_ROOT_LOGGER()) << #name << ":" << cfg##name->toString() << "\n";
-static void test4(void)
+}
+static void test05()
 {
+    std::cout << "\n=== 测试嵌套复杂类型 ===" << std::endl;
+    auto class_person = zhao::ConfigMgr::getInstance()->add<Person>("class_person", Person(), "人员映射测试");
     
-#define CONFIG_ITEM(type, name, prefix, des,val) \
-    zhao::ConfigItem<type>::Ptr cfg##name = zhao::Config::lookup(#prefix "." #name, (type)val, des);
+    // 添加嵌套map类型配置项
+    auto class_map = zhao::ConfigMgr::getInstance()->add<std::map<std::string, Person>>("class_map", std::map<std::string, Person>{}, "人员映射测试");
+    
+    // 添加vector类型配置项
+    auto class_vector = zhao::ConfigMgr::getInstance()->add<std::vector<Person>>("class_vector", std::vector<Person>{}, "人员向量测试");
+    
+    std::cout << "=== 加载YAML前的默认值 ===" << std::endl;
+    std::cout << "class_map size: " << class_map->getValue().size() << std::endl;
+    std::cout << "class_vector size: " << class_vector->getValue().size() << std::endl;
+    
+    // 加载YAML配置文件
+    try {
+        YAML::Node root = YAML::LoadFile("config/test.yml");
+        zhao::ConfigMgr::getInstance()->LoadFromYaml(root);
+        
+        std::cout << "\n=== 加载YAML后的值 ===" << std::endl;
+        //测试class_Person
+        auto cPerson = class_person->getValue();
+        std::cout << cPerson.toString() << std::endl;
+        // 测试class_map
+        auto cmap = class_map->getValue();
+        std::cout << "class_map: " << std::endl;
+        for (const auto& pair : cmap) {
+            std::cout << "  " << pair.first << ": " << pair.second.toString() << std::endl;
+        }
+        
+        // 测试class_vector
+        auto cvec = class_vector->getValue();
+        std::cout << "class_vector: " << std::endl;
+        for (size_t i = 0; i < cvec.size(); ++i) {
+            std::cout << "  [" << i << "]: " << cvec[i].toString() << std::endl;
+        }
+        
+        std::cout << "\n=== 嵌套复杂类型测试完成 ===" << std::endl;
+    }
+    catch (const std::exception& e) {
+        std::cerr << "加载YAML文件时出错: " << e.what() << std::endl;
+    }
 
-    CONFIG_ITEM(int, port, system, "port number",8080);
-    CONFIG_ITEM(float, value, system, "value number",3.1415f);
-    CONFIG_ITEM(std::vector<int>, vecs, system, "vecs number",std::vector<int>{1});
-    CONFIG_ITEM(std::list<int>, list, system, "list number",std::list<int>{2});
-    CONFIG_ITEM(std::set<int>, set, system, "set number",std::set<int>{3});
-    CONFIG_ITEM(std::unordered_set<int>, uset, system, "uset number",std::unordered_set<int>{4});
-    //CONFIG_ITEM(std::map<std::string,int>, map, system, "map number",std::map<std::string,int>{{a,15}});
-    zhao::ConfigItem<std::map<std::string,int>>::Ptr cfgmap = zhao::Config::lookup("system.map", std::map<std::string,int>{{"a",15}}, "map number");
-    zhao::ConfigItem<std::unordered_map<std::string,int>>::Ptr cfgumap = zhao::Config::lookup("system.umap", std::unordered_map<std::string,int>{{"b",16}}, "umap number");
-    zhao::ConfigItem<Student>::Ptr cfgstu = zhao::Config::lookup("system.stu", Student(18,"zhao",true), "stu number");
-    zhao::ConfigItem<std::map<std::string,Student>>::Ptr cfgstu_map = zhao::Config::lookup("class.stu_map", std::map<std::string,Student>{{"zhao",Student(18,"zhao",true)}}, "stu_map number");
-#undef CONFIG_ITEM
-
-    // 输出配置项初始值
-    ZHAO_LOG_INFO(GET_ROOT_LOGGER()) << "before:\n";
-    LOG_CONFIG_VALUE(port);
-    LOG_CONFIG_VALUE(value);
-    LOG_CONFIG_VALUE(vecs);
-    LOG_CONFIG_VALUE(list);
-    LOG_CONFIG_VALUE(set);
-    LOG_CONFIG_VALUE(uset);
-    LOG_CONFIG_VALUE(map);
-    LOG_CONFIG_VALUE(umap);
-    LOG_CONFIG_VALUE(stu);
-    LOG_CONFIG_VALUE(stu_map);
-
-    // 加载 YAML 配置文件并更新配置项
-    YAML::Node root = YAML::LoadFile("config/config.yaml");
-    zhao::Config::loadYamlToConfig(root);
-
-    // 重新获取配置项并输出更新后的值
-#define FIND_CONFIG(type, name, prefix) \
-    cfg##name = zhao::Config::find<type>(#prefix "." #name);
-
-    FIND_CONFIG(int, port, system);
-    FIND_CONFIG(float, value, system);
-    FIND_CONFIG(std::vector<int>, vecs, system);
-    FIND_CONFIG(std::list<int>, list, system);
-    FIND_CONFIG(std::set<int>, set, system);
-    FIND_CONFIG(std::unordered_set<int>, uset, system);
-    cfgmap = zhao::Config::find<std::map<std::string,int>>("system.map");
-    cfgumap = zhao::Config::find<std::unordered_map<std::string,int>>("system.umap");
-    cfgstu = zhao::Config::find<Student>("system.stu");
-    cfgstu_map = zhao::Config::find<std::map<std::string,Student>>("class.stu_map");
-#undef FIND_CONFIG
-
-    ZHAO_LOG_INFO(GET_ROOT_LOGGER()) << "after:\n";
-    LOG_CONFIG_VALUE(port);
-    LOG_CONFIG_VALUE(value);
-    LOG_CONFIG_VALUE(vecs);
-    LOG_CONFIG_VALUE(list);
-    LOG_CONFIG_VALUE(set);
-    LOG_CONFIG_VALUE(uset);
-    LOG_CONFIG_VALUE(map);
-    LOG_CONFIG_VALUE(umap);
-    LOG_CONFIG_VALUE(stu);
-    LOG_CONFIG_VALUE(stu_map);
 }
-
-static void test5(void)
+void config_test(void)
 {
-    static zhao::Logger::Ptr system_log = GET_LOGGER("system");
-    ZHAO_LOG_INFO(system_log) << "hello system" << "\n";
-    std::cout << zhao::LoggerMgr::getInstance()->toYamlString() << std::endl;
-    YAML::Node root = YAML::LoadFile("config/config.yaml");
-    zhao::Config::loadYamlToConfig(root);
-    std::cout << "=============" << std::endl;
-    std::cout << zhao::LoggerMgr::getInstance()->toYamlString() << std::endl;
-    std::cout << "=============" << std::endl;
-    std::cout << root << std::endl;
-    ZHAO_LOG_FATAL(system_log) << "hello system" << "\n ";
-
-    // system_log->setFormatter(std::make_shared<zhao::LogFormatter>(new zhao::LogFormatter("%d - %m%n")));
-    // ZHAO_LOG_INFO(system_log) << "hello system" <<"\n";
-}
-void config_test()
-{
-    test5();
+    //
+    test05();
 }

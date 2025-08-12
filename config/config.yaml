@@ -1,9 +1,0 @@
-logs:
-  - name: "system"
-    level: "INFO"
-    formatter: "%d%T%m%n"
-    appenders:
-      - type: "FileLogAppender"
-        file: "log/test1.log"
-      - type: "ConsoleLogAppender"
-

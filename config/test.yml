@@ -1,0 +1,120 @@
+# 基础类型测试
+# config_name: basic_string
+# config_value: ConfigVar<std::string>
+basic_string: "hello world"
+
+# config_name: basic_int
+# config_value: ConfigVar<int>
+basic_int: 123
+
+# config_name: basic_double
+# config_value: ConfigVar<double>
+basic_double: 3.14159
+
+# config_name: basic_bool
+# config_value: ConfigVar<bool>
+basic_bool: true
+
+# vector测试 (std::vector<T>)
+# config_name: vector_int
+# config_value: ConfigVar<std::vector<int>>
+vector_int: "[1, 2, 3, 4, 5]"
+
+# config_name: vector_string
+# config_value: ConfigVar<std::vector<std::string>>
+vector_string: "[\"apple\", \"banana\", \"cherry\"]"
+
+# config_name: vector_double
+# config_value: ConfigVar<std::vector<double>>
+vector_double: "[1.1, 2.2, 3.3]"
+
+# list测试 (std::list<T>)
+# config_name: list_int
+# config_value: ConfigVar<std::list<int>>
+list_int: "[10, 20, 30, 40]"
+
+# config_name: list_string
+# config_value: ConfigVar<std::list<std::string>>
+list_string: "[\"red\", \"green\", \"blue\"]"
+
+# set测试 (std::set<T>)
+# config_name: set_int
+# config_value: ConfigVar<std::set<int>>
+set_int: "[1, 2, 3, 4, 5]"  # 会自动去重和排序
+
+# config_name: set_string
+# config_value: ConfigVar<std::set<std::string>>
+set_string: "[\"apple\", \"banana\", \"apple\", \"cherry\"]"  # 重复元素会被去除
+
+# unordered_set测试 (std::unordered_set<T>)
+# config_name: unordered_set_int
+# config_value: ConfigVar<std::unordered_set<int>>
+unordered_set_int: "[5, 4, 3, 2, 1, 2, 3]"  # 重复元素会被去除，但不保证顺序
+
+# map测试 (std::map<std::string, T>)
+# config_name: map_string_int
+# config_value: ConfigVar<std::map<std::string, int>>
+# 或者
+# config_name: map_string_int.key1 config_value: ConfigVar<int>
+# config_name: map_string_int.key2 config_value: ConfigVar<int>
+# config_name: map_string_int.key3 config_value: ConfigVar<int>
+map_string_int:
+  key1: 100
+  key2: 200
+  key3: 300
+
+# config_name: map_string_string
+# config_value: ConfigVar<std::map<std::string, std::string>>
+# 或者
+# config_name: map_string_string.name config_value: ConfigVar<std::string>
+# config_name: map_string_string.city config_value: ConfigVar<std::string>
+# config_name: map_string_string.country config_value: ConfigVar<std::string>
+map_string_string:
+  name: "Alice"
+  city: "Beijing"
+  country: "China"
+
+# unordered_map测试 (std::unordered_map<std::string, T>)
+# config_name: unordered_map_string_double
+# config_value: ConfigVar<std::unordered_map<std::string, double>>
+# 或者
+# config_name: unordered_map_string_double.price1 config_value: ConfigVar<double>
+# config_name: unordered_map_string_double.price2 config_value: ConfigVar<double>
+# config_name: unordered_map_string_double.price3 config_value: ConfigVar<double>
+unordered_map_string_double:
+  price1: 99.9
+  price2: 199.9
+  price3: 299.9
+
+# 嵌套复杂类型测试
+class_person:
+  name: "zhao"
+  age: 18
+  sex: true
+# config_name: class_map.PersonA
+# config_value: ConfigVar<Person>
+##或者
+# config_name: class_map
+# config_value: ConfigVar<std::map<std::string, Person>> 
+class_map:
+  personA:
+    name: "John Doe"
+    age: 30
+    sex: true
+  personB:
+    name: "Jerry"
+    age: 28
+    sex: false
+#config_name: class_vector
+#config_value: ConfigVar<std::vector<Person>>
+class_vector:
+    - name: "liming"
+      age: 18
+      sex: true
+    - name: "xiaohong"
+      age: 19
+      sex: false
+    - name: "lilei"
+      age: 20
+      sex: true
+
