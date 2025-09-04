@@ -14,9 +14,9 @@ namespace zhao
 {
     static std::atomic<uint64_t> s_fiber_id{0};
     static std::atomic<uint64_t> s_fiber_count{0};
-    static thread_local Fiber* t_cur_fiber;
+    static thread_local Fiber *t_cur_fiber;
     static thread_local Fiber::ptr t_main_fiber;
-    static auto g_fiber_stack_size = zhao::ConfigMgr::getInstance()->add<uint64_t>("fiber.stacksize", 128*1024, "fiber stack size");
+    static auto g_fiber_stack_size = zhao::ConfigMgr::getInstance()->add<uint64_t>("fiber.stacksize", 128 * 1024, "fiber stack size");
 
     Fiber::Fiber()
     {
@@ -24,7 +24,6 @@ namespace zhao
         s_fiber_count++;
         m_id = ++s_fiber_id;
         getcontext(&m_ctx);
-        
     }
     Fiber::Fiber(std::function<void()> cb, size_t stacksize)
         : m_cb(cb), m_id(++s_fiber_id)
@@ -36,7 +35,7 @@ namespace zhao
         }
         ++s_fiber_count;
         m_stacksize = stacksize ? stacksize : g_fiber_stack_size->getValue();
-        m_stack = (uint8_t*)malloc(m_stacksize);
+        m_stack = (uint8_t *)malloc(m_stacksize);
         getcontext(&m_ctx);
         m_ctx.uc_stack.ss_sp = m_stack;
         m_ctx.uc_stack.ss_size = m_stacksize;
@@ -50,9 +49,9 @@ namespace zhao
         dbg << "Fiber::~Fiber id=" << m_id << " total=" << s_fiber_count;
         if (m_stack)
         {
-            //assert(m_state == TERM || m_state == EXCEPT || m_state == INIT);
+            // assert(m_state == TERM || m_state == EXCEPT || m_state == INIT);
 
-            free((void*)m_stack);
+            free((void *)m_stack);
             m_stack = nullptr;
         }
         else
@@ -68,19 +67,18 @@ namespace zhao
                 setThis(nullptr);
             }
         }
-        
     }
-    Fiber* Fiber::getThis()
+    Fiber *Fiber::getThis()
     {
         if (!t_cur_fiber)
         {
             error << "Fiber::getThis dbg.may be not create main fiber";
-            //throw std::runtime_error("Fiber::getThis dbg.may be not create main fiber");
+            // throw std::runtime_error("Fiber::getThis dbg.may be not create main fiber");
             return nullptr;
         }
         return t_cur_fiber;
     }
-    void Fiber::setThis(Fiber* f)
+    void Fiber::setThis(Fiber *f)
     {
         t_cur_fiber = f;
     }
@@ -94,17 +92,17 @@ namespace zhao
         setThis(t_main_fiber);
         return t_main_fiber;
     }
-     Fiber::ptr Fiber::getMainFiber()
-     {
+    Fiber::ptr Fiber::getMainFiber()
+    {
         return t_main_fiber;
-     }
+    }
     size_t Fiber::totalFibers()
     {
         return s_fiber_count;
     }
     void Fiber::run(void)
     {
-        Fiber* cur = t_cur_fiber;
+        Fiber *cur = t_cur_fiber;
         try
         {
             cur->m_cb();
@@ -121,14 +119,15 @@ namespace zhao
             cur->m_state = EXCEPT;
             warn << "fiber run expect:" << "unknow " << " fiber id=" << cur->m_id;
         }
-        //协程切出去了，栈帧没有销毁，cur这个shared_ptr无法减1，因此在这里调用reset手动减1
+        // 协程切出去了，栈帧没有销毁，cur这个shared_ptr无法减1，因此在这里调用reset手动减1
         cur->swapOut();
     }
     uint64_t Fiber::getFiberId()
     {
-        if(!t_cur_fiber){
-            //dbg << "Fiber::getFiberId dbg.may be not create main fiber";
-           // throw std::runtime_dbg("Fiber::getFiberId dbg.may be not create main fiber");
+        if (!t_cur_fiber)
+        {
+            // dbg << "Fiber::getFiberId dbg.may be not create main fiber";
+            // throw std::runtime_dbg("Fiber::getFiberId dbg.may be not create main fiber");
             return 0;
         }
         return t_cur_fiber->m_id;
@@ -158,7 +157,16 @@ namespace zhao
     }
     void Fiber::swapIn()
     {
-        setThis(shared_from_this());
+        try
+        {   
+            setThis(this);
+        }
+        catch (const std::bad_weak_ptr &e)
+        {
+            std::cout << "fiber use count before shared_from_this: "
+                      << this->shared_from_this().use_count() << std::endl;
+            throw;
+        }
         assert(m_state != RUN);
         m_state = RUN;
         if (swapcontext(&t_main_fiber->m_ctx, &m_ctx))

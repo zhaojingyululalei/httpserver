@@ -42,10 +42,11 @@ namespace zhao
         Worker *getWorkerPool() { return m_workerpool; }
 
         void tickle_manager(void){m_iomanager->tickle();}
-        int addEvent(int fd, IOManager::Event event, std::function<void()> cb );
+        int addEvent(int fd, IOManager::Event event, std::function<void()> cb =nullptr);
         bool delEvent(int fd, IOManager::Event event);
         bool cancelEvent(int fd, IOManager::Event event);
         bool cancelAll(int fd);
+        bool delAll(int fd);
         
 
         template <class FiberOrCb>

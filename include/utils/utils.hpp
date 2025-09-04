@@ -66,6 +66,24 @@ namespace zhao
                 return tv.tv_sec;
             }
         };
+        class File
+        {
+        public:
+        };
+        class Str
+        {
+        public:
+            static std::string Trim(const std::string &str, const std::string &delimit=" \t\r\n")
+            {
+                auto begin = str.find_first_not_of(delimit);
+                if (begin == std::string::npos)
+                {
+                    return "";
+                }
+                auto end = str.find_last_not_of(delimit);
+                return str.substr(begin, end - begin + 1);
+            }
+        };
     };
 } // namespace zhao
 

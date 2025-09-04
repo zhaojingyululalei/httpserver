@@ -262,7 +262,7 @@ namespace zhao
         }
         else
         {
-            event_ctx.fiber.reset(Fiber::getThis()); // 如果添加的事件没有回调，那么当事件触发时执行当前协程
+            event_ctx.fiber=Fiber::getThis()->shared_from_this(); // 如果添加的事件没有回调，那么当事件触发时执行当前协程
             assert(event_ctx.fiber->getState() == Fiber::RUN);
         }
         return 0;
@@ -377,6 +377,7 @@ namespace zhao
         {
             fd_ctx->triggerEvent(READ);
             --m_pendingEventCount;
+            
         }
         if (fd_ctx->events & WRITE)
         {
@@ -385,6 +386,49 @@ namespace zhao
         }
 
         assert(fd_ctx->events == 0);
+        return true;
+    }
+    bool IOManager::delAll(int fd)
+    {
+        RWMutex::ReadLockGuardType lock(m_mutex);
+        if ((int)m_fdContexts.size() <= fd)
+        {
+            return false;
+        }
+        FdContext *fd_ctx = m_fdContexts[fd];
+        lock.unlock();
+
+        FdContext::MutexType::MutexLockGuardType lock2(fd_ctx->mutex);
+        if (!fd_ctx->events)
+        {
+            return false;
+        }
+
+        int op = EPOLL_CTL_DEL;
+        epoll_event epevent;
+        epevent.events = 0;
+        epevent.data.ptr = fd_ctx;
+
+        int rt = epoll_ctl(m_epfd, op, fd, &epevent);
+        if (rt)
+        {
+            error << "epoll_ctl(" << m_epfd << ", "
+                  << op << ", " << fd << ", " << (EPOLL_EVENTS)epevent.events << "):"
+                  << rt << " (" << errno << ") (" << strerror(errno) << ")";
+            return false;
+        }
+        if (fd_ctx->events & READ)
+        {
+            --m_pendingEventCount;
+            FdContext::EventContext &event_ctx = fd_ctx->getContext(READ);
+            fd_ctx->resetContext(event_ctx);
+        }
+        if (fd_ctx->events & WRITE)
+        {
+            --m_pendingEventCount;
+            FdContext::EventContext &event_ctx = fd_ctx->getContext(WRITE);
+            fd_ctx->resetContext(event_ctx);
+        }
         return true;
     }
     void IOManager::tickle()

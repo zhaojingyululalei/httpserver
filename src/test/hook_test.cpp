@@ -1,5 +1,12 @@
 #include <iostream>
 #include <memory>
+#include <assert.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <string.h>
+#include <unistd.h>
+#include "hook.hpp"
 static void test01(void)
 {
     std::cout << "Testing malloc hook..." << std::endl;
@@ -109,7 +116,37 @@ static void test03(void)
                                               [](TestClass* p) { delete[] p; });
     // 注意：对于数组，需要提供自定义删除器，否则会有未定义行为
 } 
+static void test04(){
+    // 测试socket创建
+    int sock = socket(AF_INET, SOCK_STREAM, 0);
+    assert(sock > 0);
+    
+    // 设置服务器地址
+    struct sockaddr_in addr;
+    memset(&addr, 0, sizeof(addr));
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(80);
+    inet_pton(AF_INET, "39.156.70.46", &addr.sin_addr.s_addr);
+    std::cout <<"socket create"<<std::endl;
+    // 测试connect
+    int rt = connect(sock, (struct sockaddr*)&addr, sizeof(addr));
+    assert(rt == 0);
+    std::cout << "connect test"<<std::endl;
+    // 测试write
+    const char* request = "GET / HTTP/1.0\r\n\r\n";
+    ssize_t written = write(sock, request, strlen(request));
+    assert(written == strlen(request));
+    std::cout << "write test"<<std::endl;
+    // 测试read
+    char buffer[4096] = {0};
+    ssize_t n = read(sock, buffer, sizeof(buffer));
+    assert(n > 0);
+    std::cout << "read test"<<std::endl;
+    // 测试close
+    assert(close(sock) == 0);
+    std::cout << "close test"<<std::endl;
+}
 void hook_test(void)
 {
-    test03();
+    test04();
 }

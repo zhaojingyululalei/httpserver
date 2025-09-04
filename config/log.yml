@@ -1,6 +1,6 @@
 logs:
     - name: root
-      formatter: time:%d||logger:[%c]||module:[%M]||dbg:[%p]||tid:%t||threadname:%N||fiberid:%F||file:[%f]||line:%l||content:{%n%m%n}
+      formatter: time:%d||logger:[%c]||module:[%M]||dbg:[%p]||tid:%t||threadname:%N||fiberid:%F||file:[%f]||line:%l||content:{%n--->  %m%n}
       module:
         mask: 
           - "zhao"
@@ -12,7 +12,7 @@ logs:
             file: log/root.txt
           - type: StdoutConsole
     - name: system
-      formatter: time:%d||logger:[%c]||module:[%M]||dbg:[%p]||tid:%t||threadname:%N||fiberid:%F||file:[%f]||line:%l||content:{%n%m%n}
+      formatter: time:%d||logger:[%c]||module:[%M]||dbg:[%p]||tid:%t||threadname:%N||fiberid:%F||file:[%f]||line:%l||content:{%n--->  %m%n}
       module:
         # mask: 
         #   - "test"

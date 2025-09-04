@@ -36,7 +36,7 @@ namespace zhao
     class DynamicTokenBucket : public TokenBucket
     {
     public:
-        DynamicTokenBucket(uint64_t a=10, uint64_t b=30, int max_tokens = 10)
+        DynamicTokenBucket(uint64_t a = 10, uint64_t b = 30, int max_tokens = 10)
             : m_a_seconds(a), m_b_seconds(b), TokenBucket(max_tokens, 1)
         {
             if (b < a)
@@ -55,7 +55,38 @@ namespace zhao
         uint64_t m_last_request_time;
     };
 
-    
+    class Encode
+    {
+    public:
+        static int16_t EncodeZigZag16(int16_t n)
+        {
+            return (n << 1) ^ (n >> 15);
+        }
+        static int32_t EncodeZigZag32(int32_t n)
+        {
+            return (n << 1) ^ (n >> 31);
+        }
+        static int64_t EncodeZigZag64(int64_t n)
+        {
+            return (n << 1) ^ (n >> 63);
+        }
+    };
+    class Decode
+    {
+    public:
+        static int16_t DecodeZigZag16(int16_t n)
+        {
+            return (n >> 1) ^ -(n & 1);
+        }
+        static int32_t DecodeZigZag32(int32_t n)
+        {
+            return (n >> 1) ^ -(n & 1);
+        }
+        static int64_t DecodeZigZag64(int64_t n)
+        {
+            return (n >> 1) ^ -(n & 1);
+        }
+    };
 
 } // namespace zhao
 

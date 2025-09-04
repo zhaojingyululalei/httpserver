@@ -130,6 +130,7 @@ namespace zhao
                     {
                         work->fiber->setState(Fiber::HOLD);
                     }
+                    
                 }
                 else if (work->cb)
                 {
@@ -149,8 +150,8 @@ namespace zhao
                 {
                     warn << "this is an empty work";
                 }
-                // work处理完毕
                 work.reset();
+                
             }
         }
         m_state = Term;
@@ -183,7 +184,9 @@ namespace zhao
                 break;
             }
             dbg << "worker exit idle";
-            Fiber::getThis()->yieldToHold(); // 切回主协程
+            zhao::Fiber::ptr cur_fiber = zhao::Fiber::getThis()->shared_from_this();
+            cur_fiber->yieldToHold(); // 切回主协程
+           
         }
         dbg << "worker heartbeat timeout, exit idle";
         return;

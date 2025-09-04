@@ -70,6 +70,13 @@
         "fstream": "cpp",
         "unordered_set": "cpp",
         "future": "cpp",
-        "scoped_allocator": "cpp"
+        "scoped_allocator": "cpp",
+        "any": "cpp",
+        "forward_list": "cpp",
+        "buffer": "cpp",
+        "executor": "cpp",
+        "io_context": "cpp",
+        "netfwd": "cpp",
+        "socket": "cpp"
     }
 }

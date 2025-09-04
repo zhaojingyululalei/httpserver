@@ -37,6 +37,7 @@ namespace zhao
         bool delEvent(int fd, Event event);
         bool cancelEvent(int fd, Event event);
         bool cancelAll(int fd);
+        bool delAll(int fd);
     private:
         struct FdContext
         {

@@ -197,4 +197,8 @@ namespace zhao
     {
         return m_iomanager->cancelAll(fd);
     }
+    bool Scheduler::delAll(int fd)
+    {
+        return m_iomanager->delAll(fd);
+    }
 }

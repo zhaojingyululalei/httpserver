@@ -17,7 +17,11 @@ extern void yaml_test();
 extern void fiber_test();
 extern void scheduler_test();
 extern void msic_test();
-
+extern void address_test();
+extern void socket_test();
+extern void stream_test();
+extern void http_test();
+extern void server_test();
 static std::atomic<bool> g_running {true};
 static zhao::Scheduler::ptr g_scheduler;
 static void sigHandler(int sig) {
@@ -31,11 +35,22 @@ static void sigHandler(int sig) {
 static void log_level(void)
 {
     MODULE_MODIFY_LEVEL("fiber", LOGGER_GET("system"), zhao::LogLevel::WARN);
-   // MODULE_MODIFY_LEVEL("scheduler", LOGGER_GET("system"), zhao::LogLevel::WARN);
+    MODULE_MODIFY_LEVEL("scheduler", LOGGER_GET("system"), zhao::LogLevel::WARN);
+    MODULE_MODIFY_LEVEL("http", LOGGER_GET("system"), zhao::LogLevel::WARN);
+    MODULE_MODIFY_LEVEL("hook", LOGGER_GET("system"), zhao::LogLevel::WARN);
+    MODULE_MODIFY_LEVEL("socket", LOGGER_GET("system"), zhao::LogLevel::WARN);
+    MODULE_MODIFY_LEVEL("bytestream", LOGGER_GET("system"), zhao::LogLevel::WARN);
+    //MODULE_MODIFY_LEVEL("tcpserver", LOGGER_GET("system"), zhao::LogLevel::WARN);
 }
 static void entry(void)
 {
-    scheduler_test();
+    //scheduler_test();
+    //hook_test();
+    //address_test();
+    //socket_test();
+    //stream_test();
+    http_test();
+    //server_test();
     while(g_running)
     {
         //std::cout <<"entry function"<<std::endl;

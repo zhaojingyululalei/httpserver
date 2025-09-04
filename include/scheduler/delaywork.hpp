@@ -79,6 +79,8 @@ namespace zhao
         void listExpiredWork(std::vector<std::function<void()> >& cbs);
         DelayWork::ptr addDelayWork(uint64_t ms, std::function<void()> cb
                         ,bool recurring = false);
+        /*通过闭包捕获变量进行判断
+        提供一个弱引用来判断条件对象是否还存在*/
         DelayWork::ptr addConditionDelayWork(uint64_t ms, std::function<void()> cb
                         ,std::weak_ptr<void> weak_cond
                         ,bool recurring = false);
